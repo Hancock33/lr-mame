@@ -453,12 +453,6 @@ if (STANDALONE~=true) then
 		resincludedirs {
 			MAME_DIR .. "scripts/resources/windows/mame",
 		}
-		configuration { "vs20*"}
-			-- See https://github.com/bkaradzic/GENie/issues/544
-			includedirs {
-				MAME_DIR .. "scripts/resources/windows/mame",
-			}
-		configuration { }
 	end
 
 	local mainfile = MAME_DIR .. "src/" .. _target .. "/" .. _subtarget .. ".cpp"
