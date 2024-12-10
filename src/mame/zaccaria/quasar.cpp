@@ -36,7 +36,7 @@ Quasar by Zaccaria (1980)
 
 2650A CPU
 
-I8085 Sound Board
+I8035 Sound Board
 
 *******************************************************************************/
 
@@ -164,24 +164,9 @@ void quasar_state::palette(palette_device &palette) const
 	// effects color map
 	for (int i = 0; i < 0x100; i++)
 	{
-		int bit0, bit1, bit2;
-
-		// red component
-		bit0 = BIT(i, 7);
-		bit1 = BIT(i, 6);
-		bit2 = BIT(i, 5);
-		int const r = 0x21 * bit0 + 0x47 * bit1 + 0x97 * bit2;
-
-		// green component
-		bit0 = BIT(i, 4);
-		bit1 = BIT(i, 3);
-		bit2 = BIT(i, 2);
-		int const g = 0x21 * bit0 + 0x47 * bit1 + 0x97 * bit2;
-
-		// blue component
-		bit0 = BIT(i, 1);
-		bit1 = BIT(i, 0);
-		int const b = 0x4f * bit0 + 0xa8 * bit1;
+		int const r = pal3bit(bitswap<3>(i, 5, 6, 7));
+		int const g = pal3bit(bitswap<3>(i, 2, 3, 4));
+		int const b = pal2bit(bitswap<2>(i, 0, 1));
 
 		// 4 intensities
 		float level = 0.0f;
@@ -508,7 +493,7 @@ static INPUT_PORTS_START( quasar )
 	PORT_DIPSETTING(    0x08, DEF_STR( Medium ) )
 	PORT_DIPSETTING(    0x10, DEF_STR( Difficult ) )
 	PORT_DIPSETTING(    0x18, DEF_STR( Very_Difficult ) )
-	PORT_DIPNAME( 0x60, 0x40, "Extended Play" )       PORT_DIPLOCATION("SW2:6,7")
+	PORT_DIPNAME( 0x60, 0x40, DEF_STR( Bonus_Life ) ) PORT_DIPLOCATION("SW2:6,7")
 	PORT_DIPSETTING(    0x00, DEF_STR( None ) )
 	PORT_DIPSETTING(    0x20, "5500" )
 	PORT_DIPSETTING(    0x40, "7500" )
@@ -574,7 +559,7 @@ void quasar_state::quasar(machine_config &config)
 	m_screen->set_refresh_hz(50); // from dot clock
 	m_screen->set_vblank_time(ATTOSECONDS_IN_USEC(3500));
 	m_screen->set_size(256, 312);
-	m_screen->set_visarea(1*8+1, 29*8-1, 2*8, 32*8-1);
+	m_screen->set_visarea(0*8, 29*8-1, 2*8, 32*8-1);
 	m_screen->set_screen_update(FUNC(quasar_state::screen_update));
 	m_screen->set_palette(m_palette);
 
@@ -582,15 +567,15 @@ void quasar_state::quasar(machine_config &config)
 	PALETTE(config, m_palette, FUNC(quasar_state::palette), (64 + 1) * 8 + (4 * 256), 0x500);
 
 	S2636(config, m_s2636[0], 0);
-	m_s2636[0]->set_offsets(-13, -35);
+	m_s2636[0]->set_offsets(-13, -26);
 	m_s2636[0]->add_route(ALL_OUTPUTS, "mono", 0.2);
 
 	S2636(config, m_s2636[1], 0);
-	m_s2636[1]->set_offsets(-13, -35);
+	m_s2636[1]->set_offsets(-13, -26);
 	m_s2636[1]->add_route(ALL_OUTPUTS, "mono", 0.2);
 
 	S2636(config, m_s2636[2], 0);
-	m_s2636[2]->set_offsets(-13, -35);
+	m_s2636[2]->set_offsets(-13, -26);
 	m_s2636[2]->add_route(ALL_OUTPUTS, "mono", 0.2);
 
 	// sound hardware
