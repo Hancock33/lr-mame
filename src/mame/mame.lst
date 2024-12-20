@@ -469,6 +469,10 @@ mpc3000
 hana6pt2                        // (c) 1991 Alba
 yumefuda                        // (c) 1991 Alba
 
+@source:alba/hanadojo.cpp
+hanadojo
+hanadojoa
+
 @source:alba/rmhaihai.cpp
 rmhaihai                        // (c) 1985 Alba
 rmhaihai2                       // (c) 1985 Alba
@@ -831,25 +835,39 @@ ace500                          // 1986 Franklin Ace 500
 apple2c                         // Apr 1984 Apple //c
 apple2c0                        // ??? 1985 Apple //c (3.5 ROM)
 apple2c0uk                      // ??? 1985 Apple //c (3.5 ROM) (UK)
+apple2c0de                      // ??? 1985 Apple //c (3.5 ROM) (Germany)
 apple2c0fr                      // ??? 1985 Apple //c (3.5 ROM) (France)
+apple2c0se                      // ??? 1985 Apple //c (3.5 ROM) (Sweden)
 apple2c3                        // Sep 1986 Apple //c (Original Mem. Exp.)
 apple2c3uk                      // Sep 1986 Apple //c (Original Mem. Exp.) (UK)
+apple2c3de                      // Sep 1986 Apple //c (Original Mem. Exp.) (Germany)
 apple2c3fr                      // Sep 1986 Apple //c (Original Mem. Exp.) (France)
+apple2c3se                      // Sep 1986 Apple //c (Original Mem. Exp.) (Sweden)
 apple2c4                        // ??? 198? Apple //c (rev 4)
 apple2c4uk                      // ??? 198? Apple //c (rev 4) (UK)
+apple2c4de                      // ??? 198? Apple //c (rev 4) (Germany)
 apple2c4fr                      // ??? 198? Apple //c (rev 4) (France)
+apple2c4se                      // ??? 198? Apple //c (rev 4) (Sweden)
+apple2cde                       // Apr 1984 Apple //c (Germany)
 apple2cfr                       // Apr 1984 Apple //c (France)
 apple2cp                        // Sep 1988 Apple //c+
+apple2cse                       // Apr 1984 Apple //c (Sweden)
 apple2cuk                       // Apr 1984 Apple //c (UK)
 apple2e                         // Jan 1983 Apple //e
 apple2ee                        // Mar 1985 Apple //e Enhanced
+apple2ede                       // Jan 1983 Apple //e (Germany)
+apple2eede                      // Mar 1985 Apple //e Enhanced (Germany)
 apple2eefr                      // Mar 1985 Apple //e Enhanced (France)
+apple2eese                      // Mar 1985 Apple //e Enhanced (Sweden)
 apple2ees                       // Mar 1985 Apple //e Enhanced (Spain)
 apple2eeuk                      // Mar 1985 Apple //e Enhanced (UK)
 apple2efr                       // Jan 1983 Apple //e (France)
 apple2ep                        // Jan 1987 Apple //e Platinum
+apple2epde                      // Jan 1987 Apple //e Platinum (Germany)
 apple2epfr                      // Jan 1987 Apple //e Platinum (France)
+apple2epse                      // Jan 1987 Apple //e Platinum (Sweden)
 apple2epuk                      // Jan 1987 Apple //e Platinum (UK)
+apple2ese                       // Jan 1983 Apple //e (Sweden)
 apple2euk                       // Jan 1983 Apple //e (UK)
 cec2000                         // China Education Computer-2000
 cece                            // China Education Computer-E
@@ -16684,6 +16702,7 @@ scpchessa
 @source:cxg/dominator.cpp
 scmder
 sdtor
+sdtora
 sgalaxy
 sgalaxya
 sgalaxyb
@@ -16699,6 +16718,9 @@ supra
 @source:cxg/senterprise.cpp
 senterp
 senterpc
+
+@source:cxg/junior.cpp
+sjunior
 
 @source:cxg/sphinx40.cpp
 sphinx40
@@ -17648,6 +17670,7 @@ ippatsu                         // 01? (c) 1986 Dyna Electronics
 jangtaku                        // (c) 1986 Dyna Computer
 janoh                           // (c) 1984 Toaplan
 janoha                          // (c) 1984 Toaplan
+janohb                          // (c) 1984 Toaplan
 janptr96                        // "503" (c) 1996 Dynax
 janptrsp                        // "511" (c) 1997 Dynax
 janputer                        // bootleg
@@ -30671,6 +30694,8 @@ potnpkrk                        // Bootleg
 potnpkrl                        // Bootleg
 potnpkrm                        // Bootleg
 potnpkrn                        // Bootleg
+potnpkro                        // Bootleg
+potnpkrp                        // Bootleg
 pottnpkr                        // Bootleg
 royale                          // Unknown
 royalea                         // Unknown
@@ -30978,10 +31003,6 @@ dnbanban
 dealracl                        //
 kingpin                         // (c) 1983 American Communications Laboratories Inc.
 maxideal                        // (c) 1983 American Communications Laboratories Inc.
-
-@source:misc/kurukuru.cpp
-kurukuru                        // (c) 1990 Success / Taiyo Jidoki.
-ppj                             // (c) 199? Success / Taiyo Jidoki.
 
 @source:misc/ladyfrog.cpp
 ladyfrog                        // (c) 1990 Mondial Games
@@ -31688,9 +31709,6 @@ onetwoe                         // (c) 1997 Barko
 multibaby                       // (c) 1990 Oper Coin
 spirulo                         // (c) 1988 Oper Coin
 
-@source:misc/othello.cpp
-othello                         // (c) 1984 Success.
-
 @source:misc/pachifev.cpp
 pachifev                        // (c) 1983?
 
@@ -32215,9 +32233,6 @@ skeetsht                        // (c) 1991
 @source:misc/skimaxx.cpp
 skimaxx                         // (c) 1996 Kyle Hodgetts/ICE
 
-@source:misc/skopro.cpp
-drgdance                        // 2008
-
 @source:misc/skyarmy.cpp
 skyarmy                         // (c) 1982 Shoei
 
@@ -32265,9 +32280,6 @@ sms4in1                         // (c) 1984 SMS MFG CORP
 sms4in1a                        // (c) 1984 SMS MFG CORP
 trvhang                         // (c) 1984 SMS MFG CORP
 trvhanga                        // (c) 1984 SMS MFG CORP
-
-@source:misc/sothello.cpp
-sothello                        // (c) 1986 Success / Fujiwara.
 
 @source:misc/spdamjes.cpp
 spdamjes                        // (c) 19?? T-90 S.A.
@@ -32736,10 +32748,6 @@ sys1121                         // (c) 1984 Motorola
 
 @source:motorola/uchroma68.cpp
 uchroma68                       // 1980 Motorola evaluation board for the MC6847
-
-@source:msx/big10.cpp
-big10                           //
-big10a                          // (c) 1986 System Make
 
 @source:msx/forte2.cpp
 pesadelo                        // (c) 1989 Forte II Games
@@ -43491,6 +43499,26 @@ xplan                           // (c) 2006 Subsino
 xreel
 xtrain                          // (c) 1999 Subsino
 
+@source:success/big10.cpp
+big10                           //
+big10a                          // (c) 1986 System Make
+
+@source:success/kurukuru.cpp
+kurukuru                        // (c) 1990 Success / Taiyo Jidoki.
+ppj                             // (c) 199? Success / Taiyo Jidoki.
+
+@source:success/othello.cpp
+othello                         // (c) 1984 Success.
+
+@source:success/skopro.cpp
+drgdance                        // 2008
+
+@source:success/sothello.cpp
+sothello                        // (c) 1986 Success / Fujiwara.
+
+@source:success/tonton.cpp
+tonton                          // (c) 199? Success / Taiyo Jidoki.
+
 @source:sun/sun1.cpp
 sun1                            //
 
@@ -43636,9 +43664,6 @@ shangha2                        // (c) 1989 Sunsoft (Sun Electronics)
 shangha2a                       // (c) 1989 Sunsoft (Sun Electronics)
 shanghai                        // (c) 1988 Sunsoft (Sun Electronics)
 shanghaij                       // (c) 1988 Sunsoft (Sun Electronics)
-
-@source:sunelectronics/tonton.cpp
-tonton                          // (c) 199? Success / Taiyo Jidoki.
 
 @source:sunwise/anoworld.cpp
 anoworld
