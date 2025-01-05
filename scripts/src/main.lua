@@ -372,14 +372,6 @@ end
 		GEN_DIR  .. "resource",
 	}
 
-	configuration { "vs20*"}
-		-- See https://github.com/bkaradzic/GENie/issues/544
-		includedirs {
-			MAME_DIR .. "scripts/resources/windows/" .. _target,
-			GEN_DIR  .. "resource",
-		}
-	configuration { }
-
 	-- RETRO HACK
 	if _OPTIONS["osd"]=="retro" then
  
