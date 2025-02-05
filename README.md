@@ -16,7 +16,8 @@ make -f Makefile.libretro PREMAKE=0
 ```
 
 For Windows install `lld` for much faster linking.
---------
+
+# MAME
 
 ## What is MAME?
 
