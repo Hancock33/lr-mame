@@ -16219,6 +16219,10 @@ sk10
 @source:casio/sx1000.cpp
 sx1010
 
+@source:casio/wk1800.cpp
+wk1600                          // 2000 Casio
+wk1800                          // 2000 Casio
+
 @source:casio/zoomer.cpp
 zoomer
 
@@ -35067,6 +35071,7 @@ dgun2573a
 dgunl3201
 dgunl3202
 fcpocket
+matet300
 rminitv
 
 @source:nintendo/nes_vt369_vtunknown.cpp
@@ -35092,6 +35097,7 @@ lxccminn
 lxccplan
 lxcmc250
 lxcmcy
+lxcmcyba
 lxcmcycr
 lxcmcydp
 lxcmcyfz
@@ -35100,6 +35106,7 @@ lxcmcypp
 lxcmcysp
 lxcmcysw
 lxcyber
+matet10
 mc_cb280
 mc_hh210
 mog_m320
@@ -39818,6 +39825,7 @@ twinktmb
 atgame40
 dgunl3227
 dgunl3227a
+matet
 mdtvp1j
 mdtvp2j
 mdtvp3j
@@ -46164,6 +46172,7 @@ fundr200
 lx_aven
 lx_frozen
 lx_jg7425
+ubox30
 zone3d
 
 @source:tvgames/spg2xx.cpp
@@ -46440,6 +46449,7 @@ epo_esht
 epo_fish
 epo_guru
 epo_hamd
+epo_mail
 epo_mj
 epo_mms
 epo_mmsp
@@ -46457,12 +46467,14 @@ gungunad
 gungunrv
 has_wamg
 hikara
+isinger
 jarajal
 jpopira
 ltv_tam
 namcons1
 namcons2
 popira
+popirak
 popira2
 rad_bass
 rad_bassp
@@ -46512,6 +46524,7 @@ tomthr
 tomplc
 tvpc_dor
 tvpc_ham
+tvpc_hk
 tvpc_tom
 
 @source:tvgames/xavix2.cpp
@@ -46548,6 +46561,7 @@ apmj2009
 ban_bkgj
 ban_dn1j
 ban_kksj
+ban_ult
 ban_utmj
 epo_ntpj
 epo_rgfj
@@ -46561,6 +46575,7 @@ epo_doka
 epo_tfit
 maxheart
 mrangbat
+ndpbj
 suprtvpc
 suprtvpcdo
 suprtvpchk
