@@ -15622,6 +15622,7 @@ batcira
 batcird
 batcirj
 choko
+chokop
 csclub
 csclub1
 csclub1d
@@ -15759,6 +15760,7 @@ progearud
 pzloop2
 pzloop2j
 pzloop2jd
+pzloop2jp
 pzloop2jr1
 qndream
 ringdest
@@ -16228,6 +16230,11 @@ fp1100
 @source:casio/fp6000.cpp
 fp6000
 
+@source:casio/fz1.cpp
+fz1
+fz10m
+fz20m
+
 @source:casio/ht6000.cpp
 ht6000
 
@@ -16242,6 +16249,7 @@ pb2000c
 @source:casio/pickytlk.cpp
 jd363
 jd364
+jd366
 jd368
 pickydis
 pickytlk
@@ -18634,9 +18642,13 @@ snowboar
 snowboara
 srollnd
 touchgo
-touchgoe
-touchgon
-touchgok
+touchgoa
+touchgona
+touchgonna
+touchgonnaa
+touchgonnab
+touchgonnac
+touchgoun
 wrally2
 wrally2a
 
@@ -20466,9 +20478,6 @@ skill98
 skillch
 skillcha
 srmagic
-ss2000
-ss2000a
-ss2001
 star100
 super7
 super9
@@ -20545,7 +20554,8 @@ mgcsb
 mgdh
 mgdha
 sdmg2
-sdmg2a
+sdmg2754ca
+sdmg2754cb
 sdmg2p
 slqz2
 slqz2a
@@ -20590,7 +20600,8 @@ fruitpar
 fruitpar206us
 gonefsh2
 jking02
-klxyj
+klxyj102cn
+klxyj104cn
 lhdmg
 lhdmgp
 lhdmgp200c3m
@@ -28573,6 +28584,7 @@ tvpoker
 
 @source:misc/acefruit.cpp
 acefruit
+flshback
 sidewndr
 spellbnd
 starspnr
@@ -29531,6 +29543,7 @@ cas21iwc
 comg074
 comg076
 comg079
+comg079b
 comg080
 comg094
 comg107
@@ -32604,6 +32617,11 @@ vcarn
 @source:misc/sprcros2.cpp
 sprcros2
 sprcros2a
+
+@source:misc/sshanghai.cpp
+ssh2000
+ssh2000a
+ssh2000wf
 
 @source:misc/startouch.cpp
 europl01
@@ -42649,6 +42667,9 @@ bert
 @source:skeleton/biorhythm.cpp
 biorhthm
 
+@source:skeleton/biorhythm_fp.cpp
+biortmfp
+
 @source:skeleton/bitgraph.cpp
 bitgrpha
 bitgrphb
@@ -46420,6 +46441,7 @@ ablkickb
 abltenni
 anpantv
 ban_krkk
+ban_tam2
 comil
 ddr33v
 decathln
@@ -46428,6 +46450,7 @@ dmbtjunc
 doraglob
 doraglobf
 doraglobg
+doraglobuk
 doraphon
 doraphonf
 doyousud
