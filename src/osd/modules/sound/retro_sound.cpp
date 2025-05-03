@@ -42,7 +42,7 @@ public:
 
 	virtual int init(osd_interface &osd, const osd_options &options)
 	{
-		set_mastervolume(attenuation);
+		//set_mastervolume(attenuation);
 		return 0;
 	}
 
@@ -58,7 +58,7 @@ public:
 		retro_audio_queue(buffer, samples_this_frame * sizeof(*buffer));
 	}
 
-	virtual void set_mastervolume(int attenuation) override;
+	//virtual void set_mastervolume(int attenuation) override;
 
 private:
 	void attenuate(int16_t *data, int bytes);
@@ -86,10 +86,10 @@ void sound_retro::attenuate(int16_t *data, int bytes_to_copy)
 //  set_mastervolume
 //============================================================
 
-void sound_retro::set_mastervolume(int _attenuation)
+/*void sound_retro::set_mastervolume(int _attenuation)
 {
 	// clamp the attenuation to '-32 + 12' range
 	attenuation = std::clamp(_attenuation, -32, RETRO_MAX_VOLUME);
-}
+}*/
 
 MODULE_DEFINITION(SOUND_RETRO, sound_retro)
