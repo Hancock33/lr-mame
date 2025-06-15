@@ -42,7 +42,7 @@ struct machine_flags
 
 		TYPE_ARCADE         = 0x0000'0008,   // coin-operated machine for public use
 		TYPE_CONSOLE        = 0x0000'0010,   // console system
-		TYPE_COMPUTER       = 0x0000'0018,   // any kind of computer including home computers, minis, calculators, ...
+		TYPE_COMPUTER       = 0x0000'0018,   // any kind of computer including home computers, minis, calculators, ...)
 		TYPE_OTHER          = 0x0000'0038,   // any other emulated system (e.g. clock, satellite receiver, ...)
 
 		NO_COCKTAIL         = 0x0000'0040,  // screen flip support is missing
