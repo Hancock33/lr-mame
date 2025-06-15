@@ -1446,7 +1446,7 @@ void mame_ui_manager::draw_fps_counter(render_container &container)
 			machine().video().speed_text(),
 			0.0f, 0.0f, 1.0f,
 			ui::text_layout::text_justify::RIGHT, ui::text_layout::word_wrapping::WORD,
-			OPAQUE_, rgb_t::white(), rgb_t::black(), nullptr, nullptr);
+			OPAQUE_, colors().text_color(), colors().background_color(), nullptr, nullptr);
 }
 
 
@@ -1462,7 +1462,7 @@ void mame_ui_manager::draw_profiler(render_container &container)
 			text,
 			0.0f, 0.0f, 1.0f,
 			ui::text_layout::text_justify::LEFT, ui::text_layout::word_wrapping::WORD,
-			OPAQUE_, rgb_t::white(), rgb_t::black(), nullptr, nullptr);
+			OPAQUE_, colors().text_color(), colors().background_color(), nullptr, nullptr);
 }
 
 
@@ -1598,7 +1598,7 @@ uint32_t mame_ui_manager::handler_ingame(render_container &container)
 	}
 
 	// if the on-screen display isn't up and the user has toggled it, turn it on
-	if (!(machine().debug_flags & DEBUG_FLAG_ENABLED) && machine().ui_input().pressed(IPT_UI_ON_SCREEN_DISPLAY))
+	if (!get_slider_list().empty() && !(machine().debug_flags & DEBUG_FLAG_ENABLED) && machine().ui_input().pressed(IPT_UI_ON_SCREEN_DISPLAY))
 	{
 		ui::menu::stack_push<ui::menu_sliders>(*this, machine().render().ui_container(), true);
 		show_menu();
@@ -1864,24 +1864,21 @@ std::vector<ui::menu_item> mame_ui_manager::slider_init(running_machine &machine
 
 	m_sliders.clear();
 
-	// add overall volume
-#ifdef __LIBRETRO__
-	slider_alloc(_("Master Volume"), -960, 0, RETRO_MAX_VOLUME, 10, std::bind(&mame_ui_manager::slider_volume, this, _1, _2));
-#else
-	slider_alloc(_("Master Volume"), -960, 0, 120, 10, std::bind(&mame_ui_manager::slider_volume, this, _1, _2));
-#endif
-
 	// add per-sound device and per-sound device channel volume
 	for (device_sound_interface &snd : sound_interface_enumerator(machine.root_device()))
 	{
-		// Don't add microphones, speakers or devices without outputs
+		// don't add microphones, speakers or devices without outputs
 		if (dynamic_cast<sound_io_device *>(&snd) || !snd.outputs())
 			continue;
 
-		slider_alloc(util::string_format(_("%1$s volume"), snd.device().tag()), -960, 0, 120, 10, std::bind(&mame_ui_manager::slider_devvol, this, &snd, _1, _2));
+		// add overall volume first
+		if (m_sliders.empty())
+			slider_alloc(_("Master Volume"), -960, 0, 120, 10, std::bind(&mame_ui_manager::slider_volume, this, _1, _2));
+
+		slider_alloc(util::string_format(_("%1$s Volume"), snd.device().tag()), -960, 0, 120, 10, std::bind(&mame_ui_manager::slider_devvol, this, &snd, _1, _2));
 		if (snd.outputs() != 1)
 			for (int channel = 0; channel != snd.outputs(); channel ++)
-				slider_alloc(util::string_format(_("%1$s channel %d volume"), snd.device().tag(), channel), -960, 0, 120, 10, std::bind(&mame_ui_manager::slider_devvol_chan, this, &snd, channel, _1, _2));
+				slider_alloc(util::string_format(_("%1$s Channel %d Volume"), snd.device().tag(), channel), -960, 0, 120, 10, std::bind(&mame_ui_manager::slider_devvol_chan, this, &snd, channel, _1, _2));
 	}
 
 	// add analog adjusters
@@ -1896,9 +1893,11 @@ std::vector<ui::menu_item> mame_ui_manager::slider_init(running_machine &machine
 		}
 	}
 
-	// add CPU overclocking (cheat only)
+	// add speed and CPU overclocking (cheat only)
 	if (machine.options().cheat())
 	{
+		slider_alloc(_("Global Speed"), 100, 1000, 10000, 10, std::bind(&mame_ui_manager::slider_speed, this, _1, _2));
+
 		for (device_execute_interface &exec : execute_interface_enumerator(machine.root_device()))
 		{
 			std::string str = string_format(_("Overclock CPU %1$s"), exec.device().tag());
@@ -1929,7 +1928,7 @@ std::vector<ui::menu_item> mame_ui_manager::slider_init(running_machine &machine
 		if (machine.options().cheat())
 		{
 			std::string str = string_format(_("%1$s Refresh Rate"), screen_desc);
-			slider_alloc(std::move(str), -10000, 0, 10000, 1000, std::bind(&mame_ui_manager::slider_refresh, this, std::ref(screen), _1, _2));
+			slider_alloc(std::move(str), -10000, 0, 10000, 100, std::bind(&mame_ui_manager::slider_refresh, this, std::ref(screen), _1, _2));
 		}
 
 		// add standard brightness/contrast/gamma controls per-screen
@@ -2114,6 +2113,28 @@ int32_t mame_ui_manager::slider_adjuster(ioport_field &field, std::string *str, 
 
 
 //-------------------------------------------------
+//  slider_speed - speed factor slider callback
+//-------------------------------------------------
+
+int32_t mame_ui_manager::slider_speed(std::string *str, int32_t newval)
+{
+	if (newval != SLIDER_NOCHANGE)
+		machine().video().set_speed_factor(newval);
+
+	int32_t curval = machine().video().speed_factor();
+	if (str)
+	{
+		if (curval % 10)
+			*str = string_format(_("%1$.1f%%"), float(curval) * 0.1f);
+		else
+			*str = string_format(_("%1$3d%%"), curval / 10);
+	}
+
+	return curval;
+}
+
+
+//-------------------------------------------------
 //  slider_overclock - CPU overclocker slider
 //  callback
 //-------------------------------------------------
@@ -2143,7 +2164,6 @@ int32_t mame_ui_manager::slider_overclock(device_t &device, std::string *str, in
 int32_t mame_ui_manager::slider_refresh(screen_device &screen, std::string *str, int32_t newval)
 {
 	double defrefresh = ATTOSECONDS_TO_HZ(screen.refresh_attoseconds());
-	double refresh;
 
 	if (newval != SLIDER_NOCHANGE)
 	{
@@ -2155,7 +2175,7 @@ int32_t mame_ui_manager::slider_refresh(screen_device &screen, std::string *str,
 
 	if (str)
 		*str = string_format(_(u8"%1$.3f\u00a0Hz"), screen.frame_period().as_hz());
-	refresh = screen.frame_period().as_hz();
+	double refresh = screen.frame_period().as_hz();
 	return floor((refresh - defrefresh) * 1000.0 + 0.5);
 }
 

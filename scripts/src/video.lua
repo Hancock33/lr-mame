@@ -57,6 +57,18 @@ end
 
 --------------------------------------------------
 --
+--@src/devices/video/ariel.h,VIDEOS["ARIEL"] = true
+--------------------------------------------------
+
+if (VIDEOS["ARIEL"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/video/ariel.cpp",
+		MAME_DIR .. "src/devices/video/ariel.h",
+	}
+end
+
+--------------------------------------------------
+--
 --@src/devices/video/atirage.h,VIDEOS["ATIRAGE"] = true
 --------------------------------------------------
 
@@ -352,6 +364,18 @@ if (VIDEOS["HD61202"]~=null) then
 	files {
 		MAME_DIR .. "src/devices/video/hd61202.cpp",
 		MAME_DIR .. "src/devices/video/hd61202.h",
+	}
+end
+
+--------------------------------------------------
+--
+--@src/devices/video/hd61602.h,VIDEOS["HD61602"] = true
+--------------------------------------------------
+
+if (VIDEOS["HD61602"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/video/hd61602.cpp",
+		MAME_DIR .. "src/devices/video/hd61602.h",
 	}
 end
 
@@ -1733,24 +1757,14 @@ if (VIDEOS["BT450"]~=null) then
 	}
 end
 
+--------------------------------------------------
+--
+--@src/devices/video/st7626.h,VIDEOS["ST7626"] = true
+--------------------------------------------------
 
-
-
--- cv1k/ep1c12 subtarget hack
-if _OPTIONS["subtarget"]=="arcade" then
+if (VIDEOS["ST7626"]~=null) then
 	files {
-		MAME_DIR .. "src/mame/cave/ep1c12.cpp",
-		MAME_DIR .. "src/mame/cave/ep1c12.h",
-		MAME_DIR .. "src/mame/cave/ep1c12_blit0.cpp",
-		MAME_DIR .. "src/mame/cave/ep1c12_blit1.cpp",
-		MAME_DIR .. "src/mame/cave/ep1c12_blit2.cpp",
-		MAME_DIR .. "src/mame/cave/ep1c12_blit3.cpp",
-		MAME_DIR .. "src/mame/cave/ep1c12_blit4.cpp",
-		MAME_DIR .. "src/mame/cave/ep1c12_blit5.cpp",
-		MAME_DIR .. "src/mame/cave/ep1c12_blit6.cpp",
-		MAME_DIR .. "src/mame/cave/ep1c12_blit7.cpp",
-		MAME_DIR .. "src/mame/cave/ep1c12_blit8.cpp",
-		MAME_DIR .. "src/mame/cave/ep1c12in.ipp",
-		MAME_DIR .. "src/mame/cave/ep1c12pixel.ipp",
+		MAME_DIR .. "src/devices/video/st7626.cpp",
+		MAME_DIR .. "src/devices/video/st7626.h",
 	}
 end
