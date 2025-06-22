@@ -15,6 +15,7 @@
 #include "audio_effect_compressor.h"
 #include "audio_effect_eq.h"
 #include "audio_effect_filter.h"
+#include "audio_effect_reverb.h"
 
 #include "ui/ui.h"
 
@@ -27,6 +28,7 @@ menu_audio_effects::menu_audio_effects(mame_ui_manager &mui, render_container &c
 	: menu(mui, container)
 {
 	set_heading(_("Audio Effects"));
+	set_process_flags(PROCESS_LR_REPEAT);
 }
 
 menu_audio_effects::~menu_audio_effects()
@@ -85,7 +87,6 @@ bool menu_audio_effects::handle(event const *ev)
 		10, 20, 30, 40, 50, 75, 100, 200, 300, 400, 500, 1000, 0
 	};
 
-
 	if(!ev)
 		return false;
 
@@ -93,6 +94,8 @@ bool menu_audio_effects::handle(event const *ev)
 	case IPT_UI_SELECT: {
 		u16 chain = (uintptr_t(ev->itemref)) >> 16;
 		u16 entry = (uintptr_t(ev->itemref)) & 0xffff;
+		if(entry & 0xf000)
+			return false;
 		audio_effect *eff = chain == 0xffff ? machine().sound().default_effect_chain()[entry] : machine().sound().effect_chain(chain)[entry];
 		switch(eff->type()) {
 		case audio_effect::COMPRESSOR:
@@ -105,6 +108,10 @@ bool menu_audio_effects::handle(event const *ev)
 
 		case audio_effect::FILTER:
 			menu::stack_push<menu_audio_effect_filter>(ui(), container(), chain, entry, eff);
+			break;
+
+		case audio_effect::REVERB:
+			menu::stack_push<menu_audio_effect_reverb>(ui(), container(), chain, entry, eff);
 			break;
 		}
 		return true;
@@ -192,7 +199,7 @@ bool menu_audio_effects::handle(event const *ev)
 
 std::string menu_audio_effects::format_lat(double latency)
 {
-	return util::string_format("%3.1fms", 1000*latency);
+	return util::string_format("%3.1f ms", 1000 * latency);
 }
 
 std::string menu_audio_effects::format_u32(u32 val)

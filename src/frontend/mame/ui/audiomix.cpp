@@ -145,7 +145,6 @@ bool menu_audio_mixer::handle(event const *ev)
 		// If the next item exists and is the same speaker, go there (visually, the cursor stays on the same line)
 		// Otherwise if the previous item exists and is the same speaker, go there (visually, the cursor goes up once)
 		// Otherwise create a MT_NONE, because one is going to appear at the same place
-
 		if(cursel_index + 1 < m_selections.size() && m_selections[cursel_index+1].m_dev == m_current_selection.m_dev)
 			m_current_selection = m_selections[cursel_index+1];
 		else if(cursel_index != 0 && m_selections[cursel_index-1].m_dev == m_current_selection.m_dev)
@@ -545,7 +544,6 @@ void menu_audio_mixer::populate()
 
 	// Find the line of the current selection, if any.
 	// Otherwise default to the first line
-
 	u32 cursel_line = 0xffffffff;
 
 	for(u32 i = 0; i != m_selections.size(); i++) {
@@ -599,7 +597,7 @@ void menu_audio_mixer::populate()
 		}
 		for(const auto &cmap : omap.m_channel_mappings) {
 			const auto &node = find_node(cmap.m_node);
-			std::string guest_channel = omap.m_dev->get_position_name(cmap.m_guest_channel);
+			std::string guest_channel = omap.m_dev->get_position(cmap.m_guest_channel).name();
 			if(curline == cursel_line && m_current_group == GRP_GUEST_CHANNEL)
 				guest_channel = u8"\u25c4" + guest_channel + u8"\u25ba";
 
@@ -635,6 +633,8 @@ void menu_audio_mixer::populate()
 
 	if(cursel_line != 0xffffffff)
 		set_selection(m_selections.data() + cursel_line);
+
+	set_process_flags(PROCESS_LR_ALWAYS | ((m_current_group == GRP_DB) ? PROCESS_LR_REPEAT : 0));
 }
 
 
@@ -646,7 +646,7 @@ void menu_audio_mixer::recompute_metrics(uint32_t width, uint32_t height, float 
 {
 	menu::recompute_metrics(width, height, aspect);
 
-	//	set_custom_space(0.0f, 2.0f * line_height() + 2.0f * tb_border());
+	// set_custom_space(0.0f, 2.0f * line_height() + 2.0f * tb_border());
 }
 
 
