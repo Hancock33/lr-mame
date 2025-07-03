@@ -263,13 +263,14 @@ void osd_common_t::register_options()
 #ifndef NO_USE_PULSEAUDIO
 	REGISTER_MODULE(m_mod_man, SOUND_PULSEAUDIO);
 #endif 
-#else
-	REGISTER_MODULE(m_mod_man, SOUND_RETRO);
-#endif
 #ifndef NO_USE_PIPEWIRE
 	REGISTER_MODULE(m_mod_man, SOUND_PIPEWIRE);
 #endif
 	REGISTER_MODULE(m_mod_man, SOUND_NONE);
+#else
+	REGISTER_MODULE(m_mod_man, SOUND_RETRO);
+#endif
+
 #ifndef __LIBRETRO__
 	REGISTER_MODULE(m_mod_man, MONITOR_SDL);
 	REGISTER_MODULE(m_mod_man, MONITOR_WIN32);
@@ -314,6 +315,7 @@ void osd_common_t::register_options()
 	REGISTER_MODULE(m_mod_man, KEYBOARDINPUT_RETRO);
 #endif
 	REGISTER_MODULE(m_mod_man, KEYBOARD_NONE);
+
 #ifndef __LIBRETRO__
 	REGISTER_MODULE(m_mod_man, MOUSEINPUT_SDL);
 	REGISTER_MODULE(m_mod_man, MOUSEINPUT_RAWINPUT);
@@ -346,13 +348,10 @@ void osd_common_t::register_options()
 	REGISTER_MODULE(m_mod_man, JOYSTICK_NONE);
 
 	REGISTER_MODULE(m_mod_man, OUTPUT_NONE);
-//#ifndef __LIBRETRO__
 	REGISTER_MODULE(m_mod_man, OUTPUT_CONSOLE);
 	REGISTER_MODULE(m_mod_man, OUTPUT_NETWORK);
 #ifndef __LIBRETRO__
 	REGISTER_MODULE(m_mod_man, OUTPUT_WIN32);
-#else
-	//FIXME LIBRETRO OUTPUT
 #endif
 
 	// after initialization we know which modules are supported

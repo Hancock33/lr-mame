@@ -1781,6 +1781,14 @@ if (VIDEOS["ST7626"]~=null) then
 	}
 end
 
+
+if (VIDEOS["ST7626"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/video/st7626.cpp",
+		MAME_DIR .. "src/devices/video/st7626.h",
+	}
+end
+
 -- cv1k/ep1c12 subtarget hack
 if _OPTIONS["subtarget"]=="arcade" then
 	files {
