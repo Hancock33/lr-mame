@@ -1506,6 +1506,7 @@ magibombl
 magibombm
 magibombn
 magibombo
+magibombp
 monkeyl
 monkeyla
 monkeylb
@@ -1521,6 +1522,7 @@ speedmst
 speedmsta
 speedmstb
 westvent
+westventa
 winbingo
 winbingoa
 wwitch
@@ -15212,6 +15214,7 @@ lianhp3
 bdream97
 blshark
 butrfly
+butrflya
 butrflybl
 dbsha
 gallag50
@@ -15221,6 +15224,7 @@ leadera
 madzoo
 mbutrfly
 miaction
+mingshi2
 neraidou
 olymp
 rolla
@@ -24095,6 +24099,7 @@ fantsia2a
 fantsia2n
 fantsy95
 galhustl
+galhustla
 galsnew
 galsnewj
 galsnewk
@@ -29697,6 +29702,7 @@ bankroba
 bankrobb
 cj3play
 cjbj
+cjbj122
 cjffruit
 cjplus
 deucesw2
@@ -29707,6 +29713,8 @@ maxidbl
 megadble
 megadblj
 megastrp
+mpokerdx
+mpokerdx109
 poker52
 super97
 surpr5
@@ -31093,10 +31101,12 @@ rbspm
 sball2k1
 sc2in1
 smatch03
+smwc
 ssanguoj
 sscs
 sscs0118
 super555
+tbss
 yyhm
 
 @source:misc/goldngam.cpp
@@ -32145,6 +32155,7 @@ neoprint
 npcartv1
 npcramen
 npeurver
+npeurver2
 npfpit
 npft
 npmillen
@@ -32492,6 +32503,9 @@ pr_walls
 pr_whlft
 pr_wldkn
 pr_wnstk
+
+@source:misc/ps_m3.cpp
+unkpara
 
 @source:misc/psattack.cpp
 psattack
@@ -35353,20 +35367,22 @@ m82
 @source:nintendo/nes_sh6578.cpp
 6578cjz1
 6578cjz2
+ablwikid
 bancook
-bandgpad
 bandggcn
+bandgpad
 bb6578
 cpatrolm
 dancmix3
-ts_handy11
-ablwikid
+dgun806
+max10in1
 maxx5in1
 maxx6in1
-max10in1
-vsmaxx25
+mousekid
+soulbird
+ts_handy11
 vsmaxx15
-dgun806
+vsmaxx25
 
 @source:nintendo/nes_vt02_vt03.cpp
 88in1joy
@@ -35472,6 +35488,7 @@ fcpocket
 g5_500
 g9_666
 gbox2019
+goretrop
 gprnrs1
 gprnrs16
 hhgc319
@@ -35490,6 +35507,7 @@ myaass
 retro400
 rfcp168
 rminitv
+typo240
 
 @source:nintendo/nes_vt369_vtunknown.cpp
 36pcase
@@ -35497,10 +35515,12 @@ rminitv
 240in1ar
 denv150
 dgun2561
+dgun2572
 dgun2577
 dgun2593
 dvnimbus
 egame150
+gb50_150
 gbox2020
 gcs2mgp
 gtct885
@@ -35789,9 +35809,6 @@ wowwg
 xing48
 zone7in1
 zone7in1p
-
-@source:nintendo/vt_unknown.cpp
-dgun2572
 
 @source:nix/fitfight.cpp
 bbprot
@@ -39513,13 +39530,14 @@ psion3s
 pocketbk2
 psion3a
 psion3a2
-psion3a2_us
 psion3a2_de
 psion3a2_it
 psion3a2_ru
+psion3a2_us
 psion3c
 psion3mx
 psion3mx_fr
+psion3mx_nl
 
 @source:psion/psion5.cpp
 psion5mx
@@ -40237,14 +40255,11 @@ vtennis3
 32xj
 aiwamcd
 cdx
-dcat16
 gen_nomd
 genesis
 genesis_tmss
 laseract
 laseractj
-mahg156
-mdhh100
 megacd
 megacd2
 megacd2j
@@ -40280,15 +40295,21 @@ twinktmb
 @source:sega/megadriv_rad.cpp
 atgame40
 banmrid
+dcat16
 dgunl3227
 dgunl3227a
 matet
+mahg156
+mdhh100
 mdtvp1j
 mdtvp2j
 mdtvp3j
 msi_sf2
+mygalag
+mygalaga
 mympac
 mypac
+mysinv
 ra145
 rad_gen1
 rad_gen2
@@ -41999,6 +42020,9 @@ tvdenwad
 tvdenwam
 tvdenwat
 
+@source:seibu/banprestomsz80.cpp
+dnjsenso
+
 @source:seibu/bloodbro.cpp
 bloodbro
 bloodbroj
@@ -42309,6 +42333,7 @@ usclssic
 
 @source:seta/hanaawas.cpp
 hanaawas
+hanaawasa
 
 @source:seta/hanadojo.cpp
 hanadojo
@@ -42469,6 +42494,7 @@ koikois
 mayjinsn
 mayjisn2
 nratechu
+premline
 renju
 
 @source:seta/speedatk.cpp
@@ -42476,6 +42502,7 @@ daifugo
 hanaren2
 harashi
 speedatk
+unkalba
 
 @source:seta/speglsht.cpp
 speglsht
@@ -43366,6 +43393,7 @@ lggp40
 
 @source:skeleton/lgtz80.cpp
 arthurkn
+arthurkn100
 fruitcat
 
 @source:skeleton/lilith.cpp
@@ -44267,6 +44295,7 @@ tesorone240
 tisub
 tisuba
 tisubb
+trsocean
 victor21
 victor5
 victor5a
@@ -44278,6 +44307,7 @@ victor6b
 bishjan
 expcard
 humlan
+jgaoshou
 mtrain
 mtraina
 new2001
@@ -44543,6 +44573,7 @@ fieldday
 undoukai
 
 @source:taito/arkanoid.cpp
+arkaboot
 ark1ball
 arkangc
 arkangc2
@@ -46570,6 +46601,7 @@ carlecfg
 pvmil8
 pvmilfin
 pvwwcas
+rad_ftet
 rad_sinv
 rad_tetr
 sudelan
@@ -46805,6 +46837,8 @@ lpetshop
 lxairjet
 lxspidaj
 mattelcs
+mpntball
+mpntbalt
 mylpony
 ordentv
 pballpup
@@ -47053,6 +47087,7 @@ shtscore
 teleshi
 teleship
 trkfldch
+trkfldchj
 
 @source:tvgames/tvgame.cpp
 tvgame
@@ -47142,6 +47177,7 @@ taikodp
 taitons1
 taitons2
 tak_beyb
+tak_beyu
 tak_comt
 tak_daig
 tak_gin
@@ -47163,12 +47199,17 @@ tvpc_tom
 
 @source:tvgames/xavix2.cpp
 ban_db2j
-ltv_naru
+ban_dbz
+ban_bldj
+ban_naru
 domfitad
 dombikec
 epo_dabj
+epo_dab2j
 epo_dtcj
+epo_pabj
 epo_sskj
+epo_ssk2
 
 @source:tvgames/xavix_2000.cpp
 ban_omt
@@ -47198,6 +47239,7 @@ ban_dn1j
 ban_gkrj
 ban_kksj
 ban_ordj
+ban_pr2j
 ban_ult
 ban_utmj
 ban_um2j
@@ -47213,6 +47255,7 @@ epo_tfit
 maxheart
 mrangbat
 ndpbj
+ndpmj
 suprtvpc
 suprtvpcdo
 suprtvpchk
