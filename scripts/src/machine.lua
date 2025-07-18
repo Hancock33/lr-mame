@@ -2166,6 +2166,18 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/machine/macseconds.h,MACHINES["MACSECONDS"] = true
+---------------------------------------------------
+
+if (MACHINES["MACSECONDS"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/machine/macseconds.cpp",
+		MAME_DIR .. "src/devices/machine/macseconds.h",
+	}
+end
+
+---------------------------------------------------
+--
 --@src/devices/machine/mb14241.h,MACHINES["MB14241"] = true
 ---------------------------------------------------
 
@@ -5391,5 +5403,21 @@ if (MACHINES["SCI4"]~=null) then
 	files {
 		MAME_DIR .. "src/devices/machine/sci4.cpp",
 		MAME_DIR .. "src/devices/machine/sci4.h",
+	}
+end
+
+---------------------------------------------------
+--
+--@src/devices/machine/pl6_fpga.h,MACHINES["HEBER_PLUTO"] = true
+--@src/devices/machine/pl6_pic.h,MACHINES["HEBER_PLUTO"] = true
+---------------------------------------------------
+if (MACHINES["HEBER_PLUTO"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/machine/pl6_fpga.cpp",
+		MAME_DIR .. "src/devices/machine/pl6_fpga.h",
+		MAME_DIR .. "src/devices/machine/pl6_pic.cpp",
+		MAME_DIR .. "src/devices/machine/pl6_pic.h",
+		MAME_DIR .. "src/devices/machine/pl6_exp.cpp",
+		MAME_DIR .. "src/devices/machine/pl6_exp.h",
 	}
 end
