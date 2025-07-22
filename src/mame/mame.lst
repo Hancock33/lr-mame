@@ -315,8 +315,10 @@ yukongl5
 
 @source:acorn/atom.cpp
 atom
-atombb
-atomeb
+atombbc
+atomes
+atomrr
+prophet2
 
 @source:acorn/bbc.cpp
 abc110
@@ -1496,6 +1498,7 @@ luckycoin
 lwitch
 magibomb
 magibomb_a30
+magibomb_a31
 magibomb_a36a
 magibomb_a40a
 magibomb_a40aa
@@ -1506,7 +1509,6 @@ magibomb_aa71a
 magibomb_aa72c
 magibomb_aa72d
 magibomb_aa73a
-magibomb_ab31
 magibomb_ab42
 magibomb_ab43a
 magibomb_ab43aa
@@ -20668,6 +20670,7 @@ super7
 super9
 super9a
 super972
+superdrg
 tcl
 tonypok
 top7
@@ -33807,7 +33810,8 @@ cgangpzl
 cgangpzlj
 emeralda
 emeraldaj
-emeraldaja
+emeraldajb
+emeraldajd
 exvania
 exvaniaj
 fa
@@ -34194,7 +34198,6 @@ alpinerc
 alpinerd
 alpinerjc
 alpines
-alpinesa
 alpinr2a
 alpinr2b
 aquajet
@@ -34246,12 +34249,9 @@ gunwars
 gunwarsa
 motoxgo
 motoxgov1a
-motoxgov1a2
 motoxgov2a
-motoxgov2a2
 panicprk
 panicprkj
-panicprkj2
 raceon
 raceonj
 rapidrvr
@@ -42708,6 +42708,7 @@ mz2520
 mz3500
 
 @source:sharp/mz5500.cpp
+mz5500
 mz6500
 mz6550
 
