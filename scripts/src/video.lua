@@ -1793,6 +1793,12 @@ if (VIDEOS["SERIALVFD"]~=null) then
 	}
 end
 
+
+
+
+
+
+
 -- cv1k/ep1c12 subtarget hack
 if _OPTIONS["subtarget"]=="arcade" then
 	files {
