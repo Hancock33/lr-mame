@@ -2712,10 +2712,13 @@ No [VDP] sprites
 
 
 <!-- This board contains no SRAM, despite the header reporting 16k of battery -->
-	<software name="espnnflp" cloneof="espnnfl" supported="no"> <!-- it freezes at head/tail -->
+	<software name="espnnflp" cloneof="espnnfl" supported="no">
 		<description>ESPN Sunday Night NFL (USA, prototype)</description>
 		<year>1994</year>
 		<publisher>Sony Imagesoft</publisher>
+		<notes><![CDATA[
+Black screen after head/tails, reads at $d68000 (?)
+]]></notes>
 		<sharedfeat name="compatibility" value="NTSC-U"/>
 		<part name="cart" interface="megadriv_cart">
 			<feature name="u1" value="TC57400AD-120"/>
@@ -3055,14 +3058,11 @@ No [VDP] sprites
 
 
 <!-- This was marked as rev. A on the EA sticker, but its header (and ROM markings) uses the Jpn title... weird situation :-) -->
-	<software name="fatalrewa" cloneof="fatalrew" supported="no">
+	<software name="fatalrewa" cloneof="fatalrew" supported="yes">
 		<!-- Originally marked as Fatal Rewind, boots as The Killing Game Show -->
 		<description>The Killing Game Show (Europe)</description>
 		<year>1991</year>
 		<publisher>Electronic Arts</publisher>
-		<notes><![CDATA[
-Crashes after EA logo, requires better [VDP] irq handling
-]]></notes>
 		<part name="cart" interface="megadriv_cart">
 			<feature name="pcb" value="PWB SC40X1 REV B"/>
 			<feature name="u1" value="KILLING GAME SHOW KIL03"/>  <!-- location not really marked on PCB, using u1 for consistency -->
@@ -3073,13 +3073,13 @@ Crashes after EA logo, requires better [VDP] irq handling
 	</software>
 
 
-<!-- Only Euro is confirmed -->
-	<software name="fatalrew" supported="no">
+	<!-- Only Euro is confirmed -->
+	<software name="fatalrew" supported="partial">
 		<description>Fatal Rewind (Europe, USA, rev. A)</description>
 		<year>1991</year>
 		<publisher>Electronic Arts</publisher>
 		<notes><![CDATA[
-Crashes after EA logo, requires better [VDP] irq handling
+Crashes with NTSC machines after EOA logo (verify)
 ]]></notes>
 		<part name="cart" interface="megadriv_cart">
 			<feature name="pcb" value="PWB SC40X1 REV B"/>
@@ -6638,6 +6638,9 @@ Unsupported [Menacer] peripheral
 		<description>PGA Tour Golf II for use with the Personal Trainer</description>
 		<year>1995</year>
 		<publisher>HeartBeat Corp</publisher>
+		<notes><![CDATA[
+Unemulated HeartBeat peripheral
+]]></notes>
 		<info name="usage" value="Requires HeartBeat Personal Trainer activity tracker"/>
 		<part name="cart" interface="megadriv_cart">
 			<feature name="slot" value="rom"/>
@@ -10826,6 +10829,9 @@ Only Road Rash portion is present in the dump, the other two entries and menu ar
 		<description>The Addams Family (USA, prototype, alt)</description>
 		<year>1994</year>
 		<publisher>Flying Edge</publisher>
+		<notes><![CDATA[
+Black screen after starting a game, access $be1040-3 for a 0x524e4302 value (?)
+]]></notes>
 		<part name="cart" interface="megadriv_cart">
 			<dataarea name="rom" width="16" endianness="big" size="1048576">
 				<rom name="addams family, the (usa) (beta) (alt).bin" size="1048576" crc="3a173e1f" sha1="632b321b860021f8a473fccc7bf8a03bd9c2d581"/>
@@ -12598,6 +12604,9 @@ https://bootleggames.fandom.com/wiki/Barver_Battle_Saga:_Tai_Kong_Zhan_Shi
 		<description>Beavis and Butt-Head (USA, prototype)</description>
 		<year>1994</year>
 		<publisher>Viacom New Media</publisher>
+		<notes><![CDATA[
+Black screen, keeps accessing [VDP] with an illegal D3=0xffffffff, eventually crashes
+]]></notes>
 		<part name="cart" interface="megadriv_cart">
 			<dataarea name="rom" width="16" endianness="big" size="2097152">
 				<rom name="beavis and butt-head (usa) (beta).bin" size="2097152" crc="81ed5335" sha1="f9ed871867f543a8d94c47270cd530a5ca410664"/>
@@ -15895,6 +15904,7 @@ https://bootleggames.fandom.com/wiki/Chaoji_Dafuweng
 		</part>
 	</software>
 
+	<!-- TODO: all non-working asteborg entries needs their own mapper -->
 	<software name="asteborg" supported="no">
 		<description>Demons of Asteborg (demo 20210913)</description>
 		<year>2021</year>
@@ -17742,12 +17752,12 @@ https://segaretro.org/Elitserien_96
 		</part>
 	</software>
 
-	<software name="killshow" cloneof="fatalrew" supported="no">
+	<software name="killshow" cloneof="fatalrew" supported="partial">
 		<description>The Killing Game Show (Japan)</description>
 		<year>1993</year>
 		<publisher>Electronic Arts Victor</publisher>
 		<notes><![CDATA[
-Crashes after EA logo, requires better [VDP] irq handling
+No sound in intro opening (verify)
 ]]></notes>
 		<info name="serial" value="EM20021"/>
 		<info name="release" value="19930820"/>
@@ -19157,7 +19167,7 @@ Unemulated [Sega Mega Modem] features
 		</part>
 	</software>
 
-	<software name="hyokkohj" supported="partial">
+	<software name="hyokkohj">
 		<description>Hyokkori Hyoutan-jima - Daitouryou o Mezase! (Japan)</description>
 		<year>1992</year>
 		<publisher>Sega</publisher>
@@ -27237,13 +27247,10 @@ Throws "this game is [...] european megadrive system" even with megadriv system 
 		</part>
 	</software>
 
-	<software name="sesame" supported="no">
+	<software name="sesame" supported="yes">
 		<description>Sesame Street Counting Cafe (USA)</description>
 		<year>1994</year>
 		<publisher>Electronic Arts</publisher>
-		<notes><![CDATA[
-Black screen, requires better [VDP] irq handling
-]]></notes>
 		<part name="cart" interface="megadriv_cart">
 			<dataarea name="rom" width="16" endianness="big" size="1048576">
 				<rom name="sesame street counting cafe (usa).bin" size="1048576" crc="0a4f48c3" sha1="d5ef2b50cf1a22e07401f6a14c7946df66d8b605"/>
@@ -31879,7 +31886,7 @@ No BGMs
 		<publisher>Electronic Arts</publisher>
 		<!-- TODO: starts off with music off (still coming from the dump?) -->
 		<part name="cart" interface="megadriv_cart">
-			<feature name="slot" value="rom_sram"/>
+			<feature name="slot" value="rom_tplay96"/>
 			<!-- baddump: Sports non-default save, "Ghetto USA" instead of NY Yankees -->
 			<dataarea name="rom" width="16" endianness="big" size="4194304">
 				<rom name="triple play '96 (usa).bin" size="4194304" crc="f1748e91" sha1="c0981b524d5e1c5368f9e74a4ce9c57d87fe323a" status="baddump"/>
@@ -31895,7 +31902,7 @@ No BGMs
 		<publisher>Electronic Arts</publisher>
 		<sharedfeat name="compatibility" value="NTSC-U"/>
 		<part name="cart" interface="megadriv_cart">
-			<feature name="slot" value="rom_sram"/>
+			<feature name="slot" value="rom_tplay96"/>
 			<!-- baddump: Sports non-default save, "TODDs Team" instead of San Francisco -->
 			<dataarea name="rom" width="16" endianness="big" size="4194304">
 				<rom name="triple play gold (usa).bin" size="4194304" crc="bbe69017" sha1="007bee242384db1887c5831657470584ff77a163" status="baddump"/>
@@ -36043,9 +36050,15 @@ https://bootleggames.fandom.com/wiki/Super_Bubble_Bobble_MD
 
 <!-- This is the System Cart of the Magistr 16 computer, needs emulation of the system -->
 	<software name="magist16" supported="no">
-		<description>Magistr 16 (Russia)</description>
-		<year>199?</year>
+		<!-- Obuchayushchii kartridzh? -->
+		<description>Magistr 16 Learning Set (Russia)</description>
+		<!-- Either 2001 or 2002 -->
+		<year>200?</year>
 		<publisher>&lt;unknown&gt;</publisher>
+		<notes><![CDATA[
+https://segaretro.org/Magistr_16
+Throws error #100A at boot (has BASIC strings, may require keyboard with [VDP] irq 2)
+]]></notes>
 		<part name="cart" interface="megadriv_cart">
 			<dataarea name="rom" width="16" endianness="big" size="4194304">
 				<rom name="magistr 16.bin" size="4194304" crc="2488e685" sha1="6568b3a4e096159776ef8687a80d43589741fd60"/>
@@ -37500,6 +37513,8 @@ Black screen
 		<publisher>Titan</publisher>
 		<notes><![CDATA[
 Most effects fails
+Crashes at the very end
+https://jsgroth.dev/blog/posts/titan-overdrive/
 ]]></notes>
 		<part name="cart" interface="megadriv_cart">
 			<dataarea name="rom" width="16" endianness="big" size="0x400000">
@@ -37515,15 +37530,35 @@ Most effects fails
 		<year>2017</year>
 		<publisher>Titan</publisher>
 		<notes><![CDATA[
-Punts to a 0d2 B50D stack trace screen
-Tries to jump to jsr $a385b86.l (?) at PC=0x38b0, must be using its own mapper rather than ssf2
+Most effects fails
+https://jsgroth.dev/blog/posts/titan-overdrive-2-part-1/
+https://jsgroth.dev/blog/posts/titan-overdrive-2-part-2/
 ]]></notes>
 		<sharedfeat name="compatibility" value="PAL"/>
 		<part name="cart" interface="megadriv_cart">
-			<feature name="slot" value="rom_ssf2"/>
+			<feature name="slot" value="rom_titan"/>
 			<dataarea name="rom" width="16" endianness="big" size="16777216">
 				<rom name="titan-overdrive2.bin" size="8386056" crc="f0429fd6" sha1="603db0a214ee50c6c11e15c0d1d3bba919116d07" offset="00000"/>
 			</dataarea>
 		</part>
 	</software>
+
+	<!-- https://github.com/Stephane-D/SGDK/releases/tag/v1.62 -->
+	<software name="sgdk_bap" supported="partial">
+		<description>SGDK Bad Apple PV demo (v1.62)</description>
+		<!-- header with (c) 2020 but release happened in 2021, also repeated at demo end -->
+		<year>2021</year>
+		<publisher>SGDK</publisher>
+		<notes><![CDATA[
+Crashes at startup with megadriv (verify)
+]]></notes>
+		<!-- <sharedfeat name="compatibility" value="NTSC-J,NTSC-U"/> -->
+		<part name="cart" interface="megadriv_cart">
+			<feature name="slot" value="rom_titan"/>
+			<dataarea name="rom" width="16" endianness="big" size="0x1000000">
+				<rom name="sgdk_bad_apple.bin" size="0x980000" crc="ab53f304" sha1="56c927144438d0581baa88141ff2258c8d1e4e6b" offset="00000"/>
+			</dataarea>
+		</part>
+	</software>
+
 </softwarelist>

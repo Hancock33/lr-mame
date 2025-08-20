@@ -575,15 +575,13 @@ INPUT_PORTS_END
 
 void abc1600_state::update_br()
 {
-	// disabled since this breaks the systest, should use 68000 BR line instead
-	if (!m_dmadis)
-	{
-		//m_maincpu->set_input_line(INPUT_LINE_HALT, CLEAR_LINE);
-	}
-	else
-	{
-		//m_maincpu->set_input_line(INPUT_LINE_HALT, m_dbrq0 || m_dbrq1 || m_dbrq2);
-	}
+	// _BR = !_DMADIS || (_DBRQ0 || _DBRQ1 || _DBRQ2)
+	// _IOC = IORQ delayed by 1 clock, or IORQ preceded by 1 clock on MINT2 or MINT5 
+	// _BGACK = !_BR && !_BG && _IOC
+	// DMA0.BAI = _BGACK
+
+	// workaround for floppy DMA, this should use the 68000 BR line instead
+	m_dma0->bai_w(!m_dmadis || m_dbrq0 || m_dbrq1 || m_dbrq2);
 }
 
 void abc1600_state::update_pren0(int state)
@@ -894,13 +892,6 @@ void abc1600_state::machine_reset()
 
 	// clear NMI
 	m_maincpu->set_input_line(M68K_IRQ_7, CLEAR_LINE);
-
-	// reset devices
-	m_mac->reset();
-	m_maincpu->reset();
-	m_cio->reset();
-	m_scc->reset();
-	m_kb->reset();
 }
 
 
@@ -1081,6 +1072,9 @@ ROM_START( abc1600 )
 	ROM_LOAD( "1024 6490353-01.12e", 0x514, 0x104, CRC(67f1328a) SHA1(b585495fe14a7ae2fbb29f722dca106d59325002) ) // X36 CHANNEL SELECT TIMER
 	ROM_LOAD( "1025 6490354-01.6e",  0x618, 0x104, CRC(9bda0468) SHA1(ad373995dcc18532274efad76fa80bd13c23df25) ) // X36 Z80A-DMA INTERFACER
 	ROM_LOAD( "1031", 0x71c, 0x144, CRC(0aedc9fc) SHA1(2cbbc7d5cb16b410d296062feb77ed26ff01af24) ) // NS32081 IN ABC1600
+
+	ROM_REGION( 0x20, NMC9306_TAG, 0 )
+	ROM_LOAD( "nmc9306.14c", 0x00, 0x20, CRC(1cb59b6e) SHA1(3c955a667034db86fa1b848f0c0317157a3a48f6) )
 ROM_END
 
 

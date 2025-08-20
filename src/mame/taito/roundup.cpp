@@ -1,8 +1,9 @@
 // license:BSD-3-Clause
-// copyright-holders:Zsolt Vasvari
+// copyright-holders: Zsolt Vasvari
+
 /***************************************************************************
 
-The Pit/Round Up/Intrepid/Super Mouse memory map (preliminary)
+Round Up/The Pit/Intrepid/Super Mouse memory map (preliminary)
 
 Driver by Zsolt Vasvari
 
@@ -153,57 +154,488 @@ Player 2 and Player 1 share the same controls !
 ***************************************************************************/
 
 #include "emu.h"
-#include "thepit.h"
 
 #include "cpu/z80/z80.h"
+#include "machine/74157.h"
+#include "machine/74259.h"
 #include "machine/gen_latch.h"
 #include "machine/watchdog.h"
 #include "sound/ay8910.h"
+
+#include "emupal.h"
+#include "screen.h"
 #include "speaker.h"
+#include "tilemap.h"
 
 
-constexpr XTAL MASTER_CLOCK        = 18.432_MHz_XTAL;
-constexpr XTAL SOUND_CLOCK         = 10_MHz_XTAL;
+namespace {
 
-constexpr XTAL PIXEL_CLOCK         = MASTER_CLOCK/3;
+class roundup_state : public driver_device
+{
+public:
+	roundup_state(const machine_config &mconfig, device_type type, const char *tag) :
+		driver_device(mconfig, type, tag),
+		m_maincpu(*this, "maincpu"),
+		m_audiocpu(*this, "audiocpu"),
+		m_mainlatch(*this, "mainlatch"),
+		m_inputmux(*this, "inputmux"),
+		m_gfxdecode(*this, "gfxdecode"),
+		m_palette(*this, "palette"),
+		m_screen(*this, "screen"),
+		m_videoram(*this, "videoram"),
+		m_colorram(*this, "colorram"),
+		m_attributesram(*this, "attributesram"),
+		m_spriteram(*this, "spriteram")
+	{ }
 
-/* H counts from 128->511, HBLANK starts at 128 and ends at 256 */
-#define HTOTAL              (384)
-#define HBEND               (0)     /*(256)*/
-#define HBSTART             (256)   /*(128)*/
+	void suprmous(machine_config &config) ATTR_COLD;
+	void desertdn(machine_config &config) ATTR_COLD;
+	void dockmanb(machine_config &config) ATTR_COLD;
+	void intrepid(machine_config &config) ATTR_COLD;
+	void thepit(machine_config &config) ATTR_COLD;
+	void roundup(machine_config &config) ATTR_COLD;
+	void theportr(machine_config &config) ATTR_COLD;
 
-#define VTOTAL              (264)
-#define VBEND               (16)
-#define VBSTART             (224+16)
+protected:
+	virtual void machine_start() override ATTR_COLD;
+	virtual void video_start() override ATTR_COLD;
 
-void thepit_state::machine_start()
+	void intrepid_main_map(address_map &map) ATTR_COLD;
+
+	required_device<cpu_device> m_maincpu;
+
+private:
+	required_device<cpu_device> m_audiocpu;
+	required_device<ls259_device> m_mainlatch;
+	required_device<ls157_device> m_inputmux;
+	required_device<gfxdecode_device> m_gfxdecode;
+	required_device<palette_device> m_palette;
+	required_device<screen_device> m_screen;
+
+	required_shared_ptr<uint8_t> m_videoram;
+	required_shared_ptr<uint8_t> m_colorram;
+	required_shared_ptr<uint8_t> m_attributesram;
+	required_shared_ptr<uint8_t> m_spriteram;
+
+	uint8_t m_graphics_bank = 0;
+	uint8_t m_flip_x = 0;
+	uint8_t m_flip_y = 0;
+	tilemap_t *m_solid_tilemap = nullptr;
+	tilemap_t *m_tilemap = nullptr;
+	std::unique_ptr<uint8_t[]> m_dummy_tile;
+	uint8_t m_nmi_mask = 0;
+	emu_timer *m_vsync_timer = nullptr;
+
+	void coin_lockout_w(int state);
+	void sound_enable_w(int state);
+	void nmi_mask_w(int state);
+	void vblank_w(int state);
+	TIMER_CALLBACK_MEMBER(vsync_callback);
+	IRQ_CALLBACK_MEMBER(vsync_int_ack);
+	void videoram_w(offs_t offset, uint8_t data);
+	void colorram_w(offs_t offset, uint8_t data);
+	void flip_screen_x_w(int state);
+	void flip_screen_y_w(int state);
+	uint8_t input_port_0_r();
+
+	uint8_t intrepid_colorram_mirror_r(offs_t offset);
+	void intrepid_graphics_bank_w(int state);
+
+	TILE_GET_INFO_MEMBER(solid_get_tile_info);
+	TILE_GET_INFO_MEMBER(get_tile_info);
+
+	void roundup_palette(palette_device &palette) const ATTR_COLD;
+	void suprmous_palette(palette_device &palette) const ATTR_COLD;
+
+	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
+	uint32_t screen_update_desertdan(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
+	void draw_sprites(bitmap_ind16 &bitmap, const rectangle &cliprect, int priority_to_draw);
+
+	void audio_io_map(address_map &map) ATTR_COLD;
+	void audio_map(address_map &map) ATTR_COLD;
+	void desertdan_main_map(address_map &map) ATTR_COLD;
+	void dockmanb_main_map(address_map &map) ATTR_COLD;
+	void thepit_main_map(address_map &map) ATTR_COLD;
+	void theportr_main_map(address_map &map) ATTR_COLD;
+};
+
+class rtriv_state : public roundup_state
+{
+public:
+	rtriv_state(const machine_config &mconfig, device_type type, const char *tag) :
+		roundup_state(mconfig, type, tag),
+		m_questions(*this, "questions")
+	{ }
+
+	void rtriv(machine_config &config) ATTR_COLD;
+
+protected:
+	virtual void machine_start() override ATTR_COLD;
+
+private:
+	required_region_ptr<uint8_t> m_questions;
+
+	uint16_t m_question_address = 0;
+	uint8_t m_question_rom = 0;
+	uint8_t m_remap_address[16]{};
+
+	uint8_t question_r(offs_t offset);
+
+	void rtriv_main_map(address_map &map) ATTR_COLD;
+};
+
+
+/***************************************************************************
+
+  Convert the color PROMs into a more useable format.
+
+  bit 7 -- 220 ohm resistor  -- BLUE
+        -- 470 ohm resistor  -- BLUE
+        -- 220 ohm resistor  -- GREEN
+        -- 470 ohm resistor  -- GREEN
+        -- 1  kohm resistor  -- GREEN
+        -- 220 ohm resistor  -- RED
+        -- 470 ohm resistor  -- RED
+  bit 0 -- 1  kohm resistor  -- RED
+
+
+***************************************************************************/
+
+void roundup_state::roundup_palette(palette_device &palette) const
+{
+	uint8_t const *const color_prom = memregion("proms")->base();
+
+	for (int i = 0; i < 32; i++)
+	{
+		int bit0, bit1, bit2;
+
+		bit0 = BIT(color_prom[i], 0);
+		bit1 = BIT(color_prom[i], 1);
+		bit2 = BIT(color_prom[i], 2);
+		int const r = 0x21 * bit0 + 0x47 * bit1 + 0x97 * bit2;
+
+		bit0 = BIT(color_prom[i], 3);
+		bit1 = BIT(color_prom[i], 4);
+		bit2 = BIT(color_prom[i], 5);
+		int const g = 0x21 * bit0 + 0x47 * bit1 + 0x97 * bit2;
+
+		bit0 = 0;
+		bit1 = BIT(color_prom[i], 6);
+		bit2 = BIT(color_prom[i], 7);
+		int const b = 0x21 * bit0 + 0x47 * bit1 + 0x97 * bit2;
+
+		palette.set_pen_color(i, rgb_t(r, g, b));
+	}
+
+	// allocate primary colors for the background and foreground
+	// this is wrong, but I don't know where to pick the colors from
+	for (int i = 0; i < 8; i++)
+		palette.set_pen_color(i + 32, pal1bit(i >> 2), pal1bit(i >> 1), pal1bit(i >> 0));
+}
+
+
+/***************************************************************************
+
+ Super Mouse has 5 bits per gun (maybe 6 for green), exact weights are
+ unknown.
+
+***************************************************************************/
+
+void roundup_state::suprmous_palette(palette_device &palette) const
+{
+	uint8_t const *const color_prom = memregion("proms")->base();
+
+	for (int i = 0; i < 32; i++)
+	{
+		uint8_t const b = bitswap<8>(color_prom[i + 0x00], 0, 1, 2, 3, 4, 5, 6, 7);
+		uint8_t const g = bitswap<8>(color_prom[i + 0x20], 0, 1, 2, 3, 4, 5, 6, 7);
+		uint8_t const r = (b>>5&7)<<2 | (g>>6&3);
+
+		palette.set_pen_color(i, pal5bit(r), pal5bit(g), pal4bit(b));
+	}
+
+	// allocate primary colors for the background and foreground
+	// this is wrong, but I don't know where to pick the colors from
+	for (int i = 0; i < 8; i++)
+		palette.set_pen_color(i + 32, pal1bit(i >> 2), pal1bit(i >> 1), pal1bit(i >> 0));
+}
+
+
+
+/***************************************************************************
+
+  Callbacks for the TileMap code
+
+***************************************************************************/
+
+TILE_GET_INFO_MEMBER(roundup_state::solid_get_tile_info)
+{
+	uint8_t const back_color = (m_colorram[tile_index] & 0x70) >> 4;
+	int const priority = (back_color != 0) && ((m_colorram[tile_index] & 0x80) == 0);
+	tileinfo.pen_data = m_dummy_tile.get();
+	tileinfo.palette_base = back_color + 32;
+	tileinfo.category = priority;
+}
+
+
+TILE_GET_INFO_MEMBER(roundup_state::get_tile_info)
+{
+	uint8_t const fore_color = m_colorram[tile_index] % m_gfxdecode->gfx(0)->colors();
+	uint8_t const code = m_videoram[tile_index];
+	tileinfo.set(2 * m_graphics_bank, code, fore_color, 0);
+}
+
+
+
+/*************************************
+ *
+ *  Video system start
+ *
+ *************************************/
+
+void roundup_state::video_start()
+{
+	m_solid_tilemap = &machine().tilemap().create(*m_gfxdecode, tilemap_get_info_delegate(*this, FUNC(roundup_state::solid_get_tile_info)), TILEMAP_SCAN_ROWS, 8, 8, 32, 32);
+
+	m_tilemap = &machine().tilemap().create(*m_gfxdecode, tilemap_get_info_delegate(*this, FUNC(roundup_state::get_tile_info)), TILEMAP_SCAN_ROWS, 8, 8, 32, 32);
+	m_tilemap->set_transparent_pen(0);
+
+	m_solid_tilemap->set_scroll_cols(32);
+	m_tilemap->set_scroll_cols(32);
+
+	m_dummy_tile = make_unique_clear<uint8_t[]>(8 * 8);
+
+	m_vsync_timer = machine().scheduler().timer_alloc(timer_expired_delegate(FUNC(roundup_state::vsync_callback), this));
+
+	save_item(NAME(m_graphics_bank));
+	save_item(NAME(m_flip_x));
+	save_item(NAME(m_flip_y));
+}
+
+
+
+/*************************************
+ *
+ *  Memory handlers
+ *
+ *************************************/
+
+void roundup_state::videoram_w(offs_t offset, uint8_t data)
+{
+	m_videoram[offset] = data;
+	m_tilemap->mark_tile_dirty(offset);
+}
+
+
+void roundup_state::colorram_w(offs_t offset, uint8_t data)
+{
+	m_colorram[offset] = data;
+	m_tilemap->mark_tile_dirty(offset);
+	m_solid_tilemap->mark_tile_dirty(offset);
+}
+
+
+void roundup_state::flip_screen_x_w(int state)
+{
+	m_flip_x = state;
+
+	int flip = m_flip_x ? TILEMAP_FLIPX : 0;
+	if (m_flip_y)
+		flip |= TILEMAP_FLIPY;
+
+	m_tilemap->set_flip(flip);
+	m_solid_tilemap->set_flip(flip);
+}
+
+
+void roundup_state::flip_screen_y_w(int state)
+{
+	m_flip_y = state;
+
+	int flip = m_flip_x ? TILEMAP_FLIPX : 0;
+	if (m_flip_y)
+		flip |= TILEMAP_FLIPY;
+
+	m_tilemap->set_flip(flip);
+	m_solid_tilemap->set_flip(flip);
+}
+
+
+void roundup_state::intrepid_graphics_bank_w(int state)
+{
+	m_graphics_bank = state;
+
+	m_tilemap->mark_all_dirty();
+}
+
+
+uint8_t roundup_state::input_port_0_r()
+{
+	/* Read either the real or the fake input ports depending on the
+	   horizontal flip switch. (This is how the real PCB does it) */
+	return ~m_inputmux->output_r();
+}
+
+
+
+/*************************************
+ *
+ *  Video update
+ *
+ *************************************/
+
+void roundup_state::draw_sprites(bitmap_ind16 &bitmap, const rectangle &cliprect, int priority_to_draw)
+{
+	for (int offs = m_spriteram.bytes() - 4; offs >= 0; offs -= 4)
+	{
+		if (((m_spriteram[offs + 2] & 0x08) >> 3) == priority_to_draw)
+		{
+			if ((m_spriteram[offs + 0] == 0) || (m_spriteram[offs + 3] == 0))
+				continue;
+
+			uint8_t y = 240 - m_spriteram[offs];
+			uint8_t x = m_spriteram[offs + 3] + 1;
+
+			uint8_t flipx = m_spriteram[offs + 1] & 0x40;
+			uint8_t flipy = m_spriteram[offs + 1] & 0x80;
+
+			if (m_flip_y)
+			{
+				y = 240 - y;
+				flipy = !flipy;
+			}
+
+			if (m_flip_x)
+			{
+				x = 242 - x;
+				flipx = !flipx;
+			}
+
+			// sprites 0-3 are drawn one pixel down
+			if (offs < 16) y++;
+
+			m_gfxdecode->gfx(2 * m_graphics_bank + 1)->transpen(bitmap, cliprect,
+					m_spriteram[offs + 1] & 0x3f,
+					m_spriteram[offs + 2],
+					flipx, flipy, x, y, 0);
+
+			m_gfxdecode->gfx(2 * m_graphics_bank + 1)->transpen(bitmap, cliprect,
+					m_spriteram[offs + 1] & 0x3f,
+					m_spriteram[offs + 2],
+					flipx, flipy, x-256, y, 0);
+		}
+	}
+}
+
+
+uint32_t roundup_state::screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)
+{
+	// I have a feeling sprite area masking should be done based on tile attributes, not a custom cliprect.
+	rectangle spriterect;
+	if (m_flip_x)
+		spriterect.set(0*8, 30*8-2, 2*8, 30*8-1);
+	else
+		spriterect.set(2*8+1, 32*8-1, 2*8, 30*8-1);
+	spriterect &= cliprect;
+
+	for (int offs = 0; offs < 32; offs++)
+	{
+		m_tilemap->set_scrolly(offs, m_attributesram[offs << 1]);
+		m_solid_tilemap->set_scrolly(offs, m_attributesram[offs << 1]);
+	}
+
+	// low priority tiles
+	m_solid_tilemap->draw(screen, bitmap, cliprect, 0, 0);
+	m_tilemap->draw(screen, bitmap, cliprect, 0, 0);
+
+	// low priority sprites
+	draw_sprites(bitmap, spriterect, 0);
+
+	// high priority tiles
+	m_solid_tilemap->draw(screen, bitmap, cliprect, 1, 1);
+
+	// high priority sprites
+	draw_sprites(bitmap, spriterect, 1);
+
+	return 0;
+}
+
+
+uint32_t roundup_state::screen_update_desertdan(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)
+{
+	rectangle spriterect;
+	if (m_flip_y)
+		spriterect.set(8*8, 32*8-2, 2*8, 30*8-1);
+	else
+		spriterect.set(0*8+1, 24*8-1, 2*8, 30*8-1);
+	spriterect &= cliprect;
+
+	for (int offs = 0; offs < 32; offs++)
+	{
+		m_tilemap->set_scrolly(offs, m_attributesram[offs << 1]);
+		m_solid_tilemap->set_scrolly(offs, m_attributesram[offs << 1]);
+	}
+
+	// low priority tiles
+	m_graphics_bank = 0;
+	m_solid_tilemap->draw(screen, bitmap, cliprect, 0, 0);
+	m_tilemap->draw(screen, bitmap, cliprect, 0, 0);
+
+	// low priority sprites
+	m_graphics_bank = 1;
+	draw_sprites(bitmap, spriterect, 0);
+
+	// high priority tiles
+	m_graphics_bank = 0;
+	m_solid_tilemap->draw(screen, bitmap, cliprect, 1, 1);
+
+	// high priority sprites
+	m_graphics_bank = 1;
+	draw_sprites(bitmap, spriterect, 1);
+
+	m_graphics_bank = 0;
+
+	return 0;
+}
+
+
+void roundup_state::machine_start()
 {
 	save_item(NAME(m_nmi_mask));
 }
 
-uint8_t thepit_state::intrepid_colorram_mirror_r(offs_t offset)
+void rtriv_state::machine_start()
+{
+	roundup_state::machine_start();
+
+	save_item(NAME(m_question_address));
+	save_item(NAME(m_question_rom));
+	save_item(NAME(m_remap_address));
+}
+
+uint8_t roundup_state::intrepid_colorram_mirror_r(offs_t offset)
 {
 	return m_colorram[offset];
 }
 
-void thepit_state::coin_lockout_w(int state)
+void roundup_state::coin_lockout_w(int state)
 {
 	machine().bookkeeping().coin_lockout_w(0, !state);
 }
 
-void thepit_state::sound_enable_w(int state)
+void roundup_state::sound_enable_w(int state)
 {
 	machine().sound().system_mute(!state);
 }
 
-void thepit_state::nmi_mask_w(int state)
+void roundup_state::nmi_mask_w(int state)
 {
 	m_nmi_mask = state;
 	if (!m_nmi_mask)
 		m_maincpu->set_input_line(INPUT_LINE_NMI, CLEAR_LINE);
 }
 
-void thepit_state::vblank_w(int state)
+void roundup_state::vblank_w(int state)
 {
 	if (state)
 	{
@@ -214,77 +646,104 @@ void thepit_state::vblank_w(int state)
 	}
 }
 
-TIMER_CALLBACK_MEMBER(thepit_state::vsync_callback)
+TIMER_CALLBACK_MEMBER(roundup_state::vsync_callback)
 {
 	m_audiocpu->set_input_line(0, ASSERT_LINE);
 }
 
-IRQ_CALLBACK_MEMBER(thepit_state::vsync_int_ack)
+IRQ_CALLBACK_MEMBER(roundup_state::vsync_int_ack)
 {
 	m_audiocpu->set_input_line(0, CLEAR_LINE);
 	return 0xff;
 }
 
 
-void thepit_state::thepit_main_map(address_map &map)
+/*
+    Romar Triv questions read handler
+*/
+
+uint8_t rtriv_state::question_r(offs_t offset)
+{
+	// Set-up the remap table for every 16 bytes
+	if ((offset & 0xc00) == 0x800)
+	{
+		m_remap_address[offset & 0x0f] = ((offset & 0xf0) >> 4) ^ 0x0f;
+	}
+	// Select which ROM to read and the high 5 bits of address
+	else if ((offset & 0xc00) == 0x400)
+	{
+		m_question_rom = (offset & 0x70) >> 4;
+		m_question_address = ((offset & 0x80) << 3) | ((offset & 0x0f) << 11);
+	}
+	// Read the actual byte from question ROMs
+	else if((offset & 0xc00) == 0xc00)
+	{
+		int const real_address = (0x8000 * m_question_rom) | m_question_address | (offset & 0x3f0) | m_remap_address[offset & 0x0f];
+
+		return m_questions[real_address];
+	}
+
+	return 0; // the value read from the configuration reads is discarded
+}
+
+
+void roundup_state::thepit_main_map(address_map &map)
 {
 	map(0x0000, 0x4fff).rom();
 	map(0x8000, 0x87ff).ram();
-	map(0x8800, 0x8bff).mirror(0x0400).ram().w(FUNC(thepit_state::colorram_w)).share("colorram");
-	map(0x9000, 0x93ff).mirror(0x0400).ram().w(FUNC(thepit_state::videoram_w)).share("videoram");
-	map(0x9800, 0x983f).mirror(0x0700).ram().share("attributesram");
-	map(0x9840, 0x985f).ram().share("spriteram");
+	map(0x8800, 0x8bff).mirror(0x0400).ram().w(FUNC(roundup_state::colorram_w)).share(m_colorram);
+	map(0x9000, 0x93ff).mirror(0x0400).ram().w(FUNC(roundup_state::videoram_w)).share(m_videoram);
+	map(0x9800, 0x983f).mirror(0x0700).ram().share(m_attributesram);
+	map(0x9840, 0x985f).ram().share(m_spriteram);
 	map(0x9860, 0x98ff).ram();
-	map(0xa000, 0xa000).r(FUNC(thepit_state::input_port_0_r)).nopw(); // Not hooked up according to the schematics
+	map(0xa000, 0xa000).r(FUNC(roundup_state::input_port_0_r)).nopw(); // Not hooked up according to the schematics
 	map(0xa800, 0xa800).portr("IN1");
 	map(0xb000, 0xb000).portr("DSW");
 	map(0xb000, 0xb007).w(m_mainlatch, FUNC(ls259_device::write_d0));
 	map(0xb800, 0xb800).r("watchdog", FUNC(watchdog_timer_device::reset_r)).w("soundlatch", FUNC(generic_latch_8_device::write));
 }
 
-void thepit_state::desertdan_main_map(address_map &map)
+void roundup_state::desertdan_main_map(address_map &map)
+{
+	thepit_main_map(map);
+
+	map(0x0000, 0x7fff).rom();
+}
+
+void roundup_state::intrepid_main_map(address_map &map)
 {
 	map(0x0000, 0x7fff).rom();
 	map(0x8000, 0x87ff).ram();
-	map(0x8800, 0x8bff).mirror(0x0400).ram().w(FUNC(thepit_state::colorram_w)).share("colorram");
-	map(0x9000, 0x93ff).mirror(0x0400).ram().w(FUNC(thepit_state::videoram_w)).share("videoram");
-	map(0x9800, 0x983f).mirror(0x0700).ram().share("attributesram");
-	map(0x9840, 0x985f).ram().share("spriteram");
+	map(0x8c00, 0x8fff).r(FUNC(roundup_state::intrepid_colorram_mirror_r)).w(FUNC(roundup_state::colorram_w)); /* mirror for intrepi2 */
+	map(0x9000, 0x93ff).ram().w(FUNC(roundup_state::videoram_w)).share(m_videoram);
+	map(0x9400, 0x97ff).ram().w(FUNC(roundup_state::colorram_w)).share(m_colorram);
+	map(0x9800, 0x983f).mirror(0x0700).ram().share(m_attributesram);
+	map(0x9840, 0x985f).ram().share(m_spriteram);
 	map(0x9860, 0x98ff).ram();
-	map(0xa000, 0xa000).r(FUNC(thepit_state::input_port_0_r)).nopw(); // Not hooked up according to the schematics
+	map(0xa000, 0xa000).r(FUNC(roundup_state::input_port_0_r));
 	map(0xa800, 0xa800).portr("IN1");
 	map(0xb000, 0xb000).portr("DSW");
 	map(0xb000, 0xb007).w(m_mainlatch, FUNC(ls259_device::write_d0));
 	map(0xb800, 0xb800).r("watchdog", FUNC(watchdog_timer_device::reset_r)).w("soundlatch", FUNC(generic_latch_8_device::write));
 }
 
-void thepit_state::intrepid_main_map(address_map &map)
-{
-	map(0x0000, 0x7fff).rom();
-	map(0x8000, 0x87ff).ram();
-	map(0x8c00, 0x8fff).r(FUNC(thepit_state::intrepid_colorram_mirror_r)).w(FUNC(thepit_state::colorram_w)); /* mirror for intrepi2 */
-	map(0x9000, 0x93ff).ram().w(FUNC(thepit_state::videoram_w)).share("videoram");
-	map(0x9400, 0x97ff).ram().w(FUNC(thepit_state::colorram_w)).share("colorram");
-	map(0x9800, 0x983f).mirror(0x0700).ram().share("attributesram");
-	map(0x9840, 0x985f).ram().share("spriteram");
-	map(0x9860, 0x98ff).ram();
-	map(0xa000, 0xa000).r(FUNC(thepit_state::input_port_0_r));
-	map(0xa800, 0xa800).portr("IN1");
-	map(0xb000, 0xb000).portr("DSW");
-	map(0xb000, 0xb007).w(m_mainlatch, FUNC(ls259_device::write_d0));
-	map(0xb800, 0xb800).r("watchdog", FUNC(watchdog_timer_device::reset_r)).w("soundlatch", FUNC(generic_latch_8_device::write));
-}
-
-void thepit_state::dockmanb_main_map(address_map &map)
+void rtriv_state::rtriv_main_map(address_map &map)
 {
 	intrepid_main_map(map);
 
-	map(0x8800, 0x8bff).ram().w(FUNC(thepit_state::colorram_w)).share("colorram"); // moved here from 0x9400-0x97ff
+	map(0x4000, 0x4fff).r(FUNC(rtriv_state::question_r));
+}
+
+void roundup_state::dockmanb_main_map(address_map &map)
+{
+	intrepid_main_map(map);
+
+	map(0x8800, 0x8bff).ram().w(FUNC(roundup_state::colorram_w)).share(m_colorram); // moved here from 0x9400-0x97ff
 	map(0x8c00, 0x8fff).unmaprw();
 	map(0x9400, 0x97ff).unmaprw();
 }
 
-void thepit_state::theportr_main_map(address_map &map)
+void roundup_state::theportr_main_map(address_map &map)
 {
 	dockmanb_main_map(map);
 
@@ -292,14 +751,14 @@ void thepit_state::theportr_main_map(address_map &map)
 	map(0x8000, 0x87ff).unmaprw();
 }
 
-void thepit_state::audio_map(address_map &map)
+void roundup_state::audio_map(address_map &map)
 {
 	map(0x0000, 0x1fff).rom();
 	map(0x3800, 0x3bff).ram();
 }
 
 
-void thepit_state::audio_io_map(address_map &map)
+void roundup_state::audio_io_map(address_map &map)
 {
 	map.global_mask(0xff);
 	map(0x00, 0x00).w("soundlatch", FUNC(generic_latch_8_device::clear_w));
@@ -368,9 +827,9 @@ static INPUT_PORTS_START( thepit )
 	PORT_DIPNAME( 0x40, 0x00, DEF_STR( Lives ) )        PORT_DIPLOCATION("SW2:!3")
 	PORT_DIPSETTING(    0x00, "3" )
 	PORT_DIPSETTING(    0x40, "4" )
-	PORT_DIPNAME( 0x80, 0x00, "Diagnostic Tests" )      PORT_DIPLOCATION("SW2:!4")  /* Manual states "Always On" */
+	PORT_DIPNAME( 0x80, 0x00, "Diagnostic Tests" )      PORT_DIPLOCATION("SW2:!4")  // Manual states "Always On"
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x80, "Loop Tests" )    /* Audio Tones for TEST results */
+	PORT_DIPSETTING(    0x80, "Loop Tests" )    // Audio Tones for TEST results
 
 	/* Since the real inputs are multiplexed, we used this fake port
 	   to read the 2nd player controls when the screen is flipped */
@@ -405,7 +864,7 @@ static INPUT_PORTS_START( desertdn )
 	PORT_DIPNAME( 0x10, 0x00, DEF_STR( Cabinet ) )
 	PORT_DIPSETTING(    0x10, DEF_STR( Cocktail ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Upright ) )
-	PORT_DIPNAME( 0x20, 0x00, DEF_STR( Unknown ) ) /* Bonus ?? */
+	PORT_DIPNAME( 0x20, 0x00, DEF_STR( Unknown ) ) // Bonus ??
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( On ) )
 	PORT_DIPNAME( 0x40, 0x00, "Timer Speed" )
@@ -476,7 +935,7 @@ INPUT_PORTS_END
 
 static INPUT_PORTS_START( intrepid )
 	PORT_INCLUDE(in0_real)
-	/* The bit at 0x80 in IN0 Starts a timer, which, after it runs down, doesn't seem to do anything. See $0105 */
+	// The bit at 0x80 in IN0 Starts a timer, which, after it runs down, doesn't seem to do anything. See $0105
 
 	PORT_START("IN1")
 	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_COIN1 )
@@ -559,10 +1018,10 @@ static INPUT_PORTS_START( dockman )
 	PORT_DIPNAME( 0x20, 0x00, DEF_STR( Cabinet ) )      PORT_DIPLOCATION("SW1:!6")
 	PORT_DIPSETTING(    0x00, DEF_STR( Upright ) )
 	PORT_DIPSETTING(    0x20, DEF_STR( Cocktail ) )
-	PORT_DIPNAME( 0x40, 0x00, DEF_STR( Unknown ) )      PORT_DIPLOCATION("SW1:!7")  /* not used? */
+	PORT_DIPNAME( 0x40, 0x00, DEF_STR( Unknown ) )      PORT_DIPLOCATION("SW1:!7")  // not used?
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x40, DEF_STR( On ) )
-	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Unknown ) )      PORT_DIPLOCATION("SW1:!8")  /* not used? */
+	PORT_DIPNAME( 0x80, 0x00, DEF_STR( Unknown ) )      PORT_DIPLOCATION("SW1:!8")  // not used?
 	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x80, DEF_STR( On ) )
 
@@ -595,11 +1054,11 @@ static INPUT_PORTS_START( suprmous )
 	PORT_DIPSETTING(    0x05, DEF_STR( 1C_5C ) )
 	PORT_DIPSETTING(    0x06, DEF_STR( 1C_6C ) )
 	PORT_DIPSETTING(    0x07, DEF_STR( 1C_7C ) )
-	PORT_DIPNAME( 0x18, 0x00, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW:!4,!5")  /* The game reads these together */
+	PORT_DIPNAME( 0x18, 0x00, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW:!4,!5")  // The game reads these together
 	PORT_DIPSETTING(    0x00, "3" )
 	PORT_DIPSETTING(    0x08, "5" )
-	//PORT_DIPSETTING(    0x10, "5" )
-	//PORT_DIPSETTING(    0x18, "5" )
+	PORT_DIPSETTING(    0x10, "5 (duplicate)" )
+	PORT_DIPSETTING(    0x18, "5 (duplicate)" )
 	PORT_DIPNAME( 0x20, 0x00, DEF_STR( Bonus_Life ) ) PORT_DIPLOCATION("SW:!6")
 	PORT_DIPSETTING(    0x20, "5000" )
 	PORT_DIPSETTING(    0x00, "10000" )
@@ -728,44 +1187,44 @@ static const gfx_layout suprmous_spritelayout =
 };
 
 
-static GFXDECODE_START( gfx_thepit )
-	GFXDECODE_ENTRY( "gfx1", 0, charlayout,   0, 8 )
-	GFXDECODE_ENTRY( "gfx1", 0, spritelayout, 0, 8 )
+static GFXDECODE_START( gfx_roundup )
+	GFXDECODE_ENTRY( "gfx", 0, charlayout,   0, 8 )
+	GFXDECODE_ENTRY( "gfx", 0, spritelayout, 0, 8 )
 GFXDECODE_END
 
 static GFXDECODE_START( gfx_intrepid )
-	GFXDECODE_ENTRY( "gfx1", 0x0000, charlayout,   0, 8 )
-	GFXDECODE_ENTRY( "gfx1", 0x0000, spritelayout, 0, 8 )
-	GFXDECODE_ENTRY( "gfx1", 0x0800, charlayout,   0, 8 )
-	GFXDECODE_ENTRY( "gfx1", 0x0800, spritelayout, 0, 8 )
+	GFXDECODE_ENTRY( "gfx", 0x0000, charlayout,   0, 8 )
+	GFXDECODE_ENTRY( "gfx", 0x0000, spritelayout, 0, 8 )
+	GFXDECODE_ENTRY( "gfx", 0x0800, charlayout,   0, 8 )
+	GFXDECODE_ENTRY( "gfx", 0x0800, spritelayout, 0, 8 )
 GFXDECODE_END
 
 static GFXDECODE_START( gfx_suprmous )
-	GFXDECODE_ENTRY( "gfx1", 0x0000, suprmous_charlayout,   0, 4 )
-	GFXDECODE_ENTRY( "gfx1", 0x0800, suprmous_spritelayout, 0, 4 )
+	GFXDECODE_ENTRY( "gfx", 0x0000, suprmous_charlayout,   0, 4 )
+	GFXDECODE_ENTRY( "gfx", 0x0800, suprmous_spritelayout, 0, 4 )
 GFXDECODE_END
 
 
-void thepit_state::thepit(machine_config &config)
+void roundup_state::roundup(machine_config &config)
 {
-	/* basic machine hardware */
-	Z80(config, m_maincpu, PIXEL_CLOCK/2); // 3.072 MHz
-	m_maincpu->set_addrmap(AS_PROGRAM, &thepit_state::thepit_main_map);
+	// basic machine hardware
+	Z80(config, m_maincpu, 18.432_MHz_XTAL / 3 / 2); // 3.072 MHz
+	m_maincpu->set_addrmap(AS_PROGRAM, &roundup_state::thepit_main_map);
 
-	Z80(config, m_audiocpu, SOUND_CLOCK/4); // 2.5 MHz
-	m_audiocpu->set_addrmap(AS_PROGRAM, &thepit_state::audio_map);
-	m_audiocpu->set_addrmap(AS_IO, &thepit_state::audio_io_map);
-	m_audiocpu->set_irq_acknowledge_callback(FUNC(thepit_state::vsync_int_ack));
+	Z80(config, m_audiocpu, 10_MHz_XTAL / 4); // 2.5 MHz
+	m_audiocpu->set_addrmap(AS_PROGRAM, &roundup_state::audio_map);
+	m_audiocpu->set_addrmap(AS_IO, &roundup_state::audio_io_map);
+	m_audiocpu->set_irq_acknowledge_callback(FUNC(roundup_state::vsync_int_ack));
 
 	config.set_maximum_quantum(attotime::from_hz(3000));
 
 	LS259(config, m_mainlatch); // IC42
-	m_mainlatch->q_out_cb<0>().set(FUNC(thepit_state::nmi_mask_w));
-	m_mainlatch->q_out_cb<2>().set_nop(); // marked "LOCK OUT" on Centuri schematic but never written
-	m_mainlatch->q_out_cb<3>().set(FUNC(thepit_state::sound_enable_w));
-	m_mainlatch->q_out_cb<6>().set(FUNC(thepit_state::flip_screen_x_w));
+	m_mainlatch->q_out_cb<0>().set(FUNC(roundup_state::nmi_mask_w));
+	m_mainlatch->q_out_cb<2>().set(FUNC(roundup_state::coin_lockout_w));
+	m_mainlatch->q_out_cb<3>().set(FUNC(roundup_state::sound_enable_w));
+	m_mainlatch->q_out_cb<6>().set(FUNC(roundup_state::flip_screen_x_w));
 	m_mainlatch->q_out_cb<6>().append(m_inputmux, FUNC(ls157_x2_device::select_w));
-	m_mainlatch->q_out_cb<7>().set(FUNC(thepit_state::flip_screen_y_w));
+	m_mainlatch->q_out_cb<7>().set(FUNC(roundup_state::flip_screen_y_w));
 
 	LS157_X2(config, m_inputmux); // IC5 (0-3) & IC6 (4-7)
 	m_inputmux->a_in_callback().set_ioport("IN0");
@@ -773,80 +1232,83 @@ void thepit_state::thepit(machine_config &config)
 
 	WATCHDOG_TIMER(config, "watchdog");
 
-	/* video hardware */
-	GFXDECODE(config, m_gfxdecode, m_palette, gfx_thepit);
-	PALETTE(config, m_palette, FUNC(thepit_state::thepit_palette), 32+8);
+	// video hardware
+	GFXDECODE(config, m_gfxdecode, m_palette, gfx_roundup);
+	PALETTE(config, m_palette, FUNC(roundup_state::roundup_palette), 32+8);
 
 	screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
-	screen.set_raw(PIXEL_CLOCK, HTOTAL, HBEND, HBSTART, VTOTAL, VBEND, VBSTART);
-	screen.set_screen_update(FUNC(thepit_state::screen_update));
+	screen.set_raw(18.432_MHz_XTAL / 3, 384, 0, 256, 264, 16, 224 + 16); // H counts from 128->511, HBLANK starts at 128 and ends at 256
+	screen.set_screen_update(FUNC(roundup_state::screen_update));
 	screen.set_palette(m_palette);
-	screen.screen_vblank().set(FUNC(thepit_state::vblank_w));
+	screen.screen_vblank().set(FUNC(roundup_state::vblank_w));
 
-	/* sound hardware */
+	// sound hardware
 	SPEAKER(config, "mono").front_center();
 
 	GENERIC_LATCH_8(config, "soundlatch");
 
-	ay8910_device &ay1(AY8910(config, "ay1", PIXEL_CLOCK/4));
+	ay8910_device &ay1(AY8910(config, "ay1", 18.432_MHz_XTAL / 3 / 4));
 	ay1.port_a_read_callback().set("soundlatch", FUNC(generic_latch_8_device::read));
 	ay1.add_route(ALL_OUTPUTS, "mono", 0.25);
 
-	AY8910(config, "ay2", PIXEL_CLOCK/4).add_route(ALL_OUTPUTS, "mono", 0.25);
+	AY8910(config, "ay2", 18.432_MHz_XTAL / 3 / 4).add_route(ALL_OUTPUTS, "mono", 0.25);
 }
 
-void thepit_state::fitter(machine_config &config)
+void roundup_state::thepit(machine_config &config)
 {
-	thepit(config);
-	m_mainlatch->q_out_cb<2>().set(FUNC(thepit_state::coin_lockout_w));
+	roundup(config);
+	m_mainlatch->q_out_cb<2>().set_nop(); // marked "LOCK OUT" on Centuri schematic but never written
 }
 
-void thepit_state::desertdn(machine_config &config)
+void roundup_state::desertdn(machine_config &config)
 {
-	fitter(config);
+	roundup(config);
 
-	/* basic machine hardware */
-	m_maincpu->set_addrmap(AS_PROGRAM, &thepit_state::desertdan_main_map);
+	// basic machine hardware
+	m_maincpu->set_addrmap(AS_PROGRAM, &roundup_state::desertdan_main_map);
 
-	/* video hardware */
-	subdevice<screen_device>("screen")->set_screen_update(FUNC(thepit_state::screen_update_desertdan));
+	// video hardware
+	subdevice<screen_device>("screen")->set_screen_update(FUNC(roundup_state::screen_update_desertdan));
 
 	m_gfxdecode->set_info(gfx_intrepid);
 }
 
-void thepit_state::intrepid(machine_config &config)
+void roundup_state::intrepid(machine_config &config)
 {
-	fitter(config);
+	roundup(config);
 
-	/* basic machine hardware */
-	m_maincpu->set_addrmap(AS_PROGRAM, &thepit_state::intrepid_main_map);
+	// basic machine hardware
+	m_maincpu->set_addrmap(AS_PROGRAM, &roundup_state::intrepid_main_map);
+	m_mainlatch->q_out_cb<5>().set(FUNC(roundup_state::intrepid_graphics_bank_w));
 
-	m_mainlatch->q_out_cb<5>().set(FUNC(thepit_state::intrepid_graphics_bank_w));
-
-	/* video hardware */
+	// video hardware
 	m_gfxdecode->set_info(gfx_intrepid);
 }
 
-void thepit_state::dockmanb(machine_config &config)
+void rtriv_state::rtriv(machine_config &config)
 {
 	intrepid(config);
-
-	m_maincpu->set_addrmap(AS_PROGRAM, &thepit_state::dockmanb_main_map);
+	m_maincpu->set_addrmap(AS_PROGRAM, &rtriv_state::rtriv_main_map);
 }
 
-void thepit_state::theportr(machine_config &config)
+void roundup_state::dockmanb(machine_config &config)
+{
+	intrepid(config);
+	m_maincpu->set_addrmap(AS_PROGRAM, &roundup_state::dockmanb_main_map);
+}
+
+void roundup_state::theportr(machine_config &config)
 {
 	dockmanb(config);
-
-	m_maincpu->set_addrmap(AS_PROGRAM, &thepit_state::theportr_main_map);
+	m_maincpu->set_addrmap(AS_PROGRAM, &roundup_state::theportr_main_map);
 }
 
-void thepit_state::suprmous(machine_config &config)
+void roundup_state::suprmous(machine_config &config)
 {
 	intrepid(config);
 
-	/* video hardware */
-	m_palette->set_init(FUNC(thepit_state::suprmous_palette));
+	// video hardware
+	m_palette->set_init(FUNC(roundup_state::suprmous_palette));
 	m_gfxdecode->set_info(gfx_suprmous);
 }
 
@@ -869,12 +1331,12 @@ ROM_START( thepit )
 	ROM_REGION( 0x10000, "audiocpu", 0 )
 	ROM_LOAD( "pit6.bin",     0x0000, 0x0800, CRC(1b79dfb6) SHA1(ba78b035a91a67732414ba327640fb771d4323c5) )
 
-	ROM_REGION( 0x1800, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x1800, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "pit8.bin",     0x0000, 0x0800, CRC(69502afc) SHA1(9baf094baab8325af659879cfb6984eeca0d94bd) )
 	ROM_LOAD( "pit7.bin",     0x1000, 0x0800, CRC(d901b353) SHA1(4a35dd857ca352e0260361376fe666af4b3315af) )
 
 	ROM_REGION( 0x0020, "proms", 0 )
-	ROM_LOAD( "82s123.ic4",   0x0000, 0x0020, CRC(a758b567) SHA1(d188c90dba10fe3abaae92488786b555b35218c5) ) /* Color prom was a MMI6331 and is compatible with the 82s123 prom type */
+	ROM_LOAD( "82s123.ic4",   0x0000, 0x0020, CRC(a758b567) SHA1(d188c90dba10fe3abaae92488786b555b35218c5) ) // Color PROM was a MMI6331 and is compatible with the 82s123 PROM type
 ROM_END
 
 ROM_START( thepitu1 )
@@ -888,7 +1350,7 @@ ROM_START( thepitu1 )
 	ROM_REGION( 0x10000, "audiocpu", 0 )
 	ROM_LOAD( "p30.ic30",     0x0000, 0x0800, CRC(1b79dfb6) SHA1(ba78b035a91a67732414ba327640fb771d4323c5) )
 
-	ROM_REGION( 0x1800, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x1800, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "p9.ic9",       0x0000, 0x0800, CRC(69502afc) SHA1(9baf094baab8325af659879cfb6984eeca0d94bd) )
 	ROM_LOAD( "p8.ic8",       0x1000, 0x0800, CRC(2ddd5045) SHA1(baa962a874f00e56c15c264980b1e31a2c9dc270) )
 
@@ -907,7 +1369,7 @@ ROM_START( thepitu2 )
 	ROM_REGION( 0x10000, "audiocpu", 0 )
 	ROM_LOAD( "p30.ic30",     0x0000, 0x0800, CRC(1b79dfb6) SHA1(ba78b035a91a67732414ba327640fb771d4323c5) )
 
-	ROM_REGION( 0x1800, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x1800, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "p9b.ic9",      0x0000, 0x0800, CRC(69502afc) SHA1(9baf094baab8325af659879cfb6984eeca0d94bd) )
 	ROM_LOAD( "p8b.ic8",      0x1000, 0x0800, CRC(2ddd5045) SHA1(baa962a874f00e56c15c264980b1e31a2c9dc270) )
 
@@ -926,7 +1388,7 @@ ROM_START( thepitu3 )
 	ROM_REGION( 0x10000, "audiocpu", 0 )
 	ROM_LOAD( "pi-30.ic30",   0x0000, 0x0800, CRC(1b79dfb6) SHA1(ba78b035a91a67732414ba327640fb771d4323c5) )
 
-	ROM_REGION( 0x1800, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x1800, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "pi-9.ic9",     0x0000, 0x0800, CRC(69502afc) SHA1(9baf094baab8325af659879cfb6984eeca0d94bd) )
 	ROM_LOAD( "pi-8.ic8",     0x1000, 0x0800, CRC(2ddd5045) SHA1(baa962a874f00e56c15c264980b1e31a2c9dc270) )
 
@@ -946,7 +1408,7 @@ ROM_START( thepitj )
 	ROM_LOAD( "pit07.ic30",   0x0000, 0x0800, CRC(2d4881f9) SHA1(4773235d427ab88116e07599d0d5b130377548e7) )
 	ROM_LOAD( "pit06.ic31",   0x0800, 0x0800, CRC(c9d8c1cc) SHA1(66d0840182ede356c53cd1f930ea8abf86094ab7) )
 
-	ROM_REGION( 0x1800, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x1800, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "pit08.ic9",    0x0000, 0x0800, CRC(00dce65f) SHA1(ba0cce484d1f8693a85b85e0689d107588df9043) )
 	ROM_LOAD( "pit09.ic8",    0x1000, 0x0800, CRC(a2e2b218) SHA1(1aa293a9503f3cbbc2fbd84b6b1d30124ef462e7) )
 
@@ -965,7 +1427,7 @@ ROM_START( thehole ) // uses many components (i.e. the Z80s) marked by SGS, an I
 	ROM_REGION( 0x10000, "audiocpu", 0 )
 	ROM_LOAD( "6.6d",     0x0000, 0x0800, CRC(1b79dfb6) SHA1(ba78b035a91a67732414ba327640fb771d4323c5) )
 
-	ROM_REGION( 0x1800, "gfx1", 0 ) // chars and sprites
+	ROM_REGION( 0x1800, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "8.3l",     0x0000, 0x0800, CRC(2ff010ca) SHA1(67dfa8ac3f52c7a502ba24d2cbeae932e57b854e) )
 	ROM_LOAD( "7.1l",     0x1000, 0x0800, CRC(d901b353) SHA1(4a35dd857ca352e0260361376fe666af4b3315af) )
 
@@ -985,7 +1447,7 @@ ROM_START( roundup )
 	ROM_LOAD( "roundup.u30",  0x0000, 0x0800, CRC(1b18faee) SHA1(b4002e2fdaa6bb966da4faa46ac56751a3841f5f) )
 	ROM_LOAD( "roundup.u31",  0x0800, 0x0800, CRC(76cf4394) SHA1(5dc13bd5fc92ce4ce12bab60576292a6028891c3) )
 
-	ROM_REGION( 0x1800, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x1800, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "roundup.u9",   0x0000, 0x0800, CRC(394676a2) SHA1(5bd26d717e25b7c192af8173db9ae18371dbcfbe) )
 	ROM_LOAD( "roundup.u10",  0x1000, 0x0800, CRC(a38d708d) SHA1(6632392cece34332a2a4427ec14d95f201319c67) )
 
@@ -1005,7 +1467,7 @@ ROM_START( fitter )
 	ROM_LOAD( "ic30.bin",     0x0000, 0x0800, CRC(4055b5ca) SHA1(abf8f9e830b1190fb87896e1fb3adca8f9e18df1) )
 	ROM_LOAD( "ic31.bin",     0x0800, 0x0800, CRC(c9d8c1cc) SHA1(66d0840182ede356c53cd1f930ea8abf86094ab7) )
 
-	ROM_REGION( 0x1800, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x1800, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "ic9.bin",      0x0000, 0x0800, CRC(a6799a37) SHA1(7864cb255bff976630b6e03b1683f7d3ccd0a80f) )
 	ROM_LOAD( "ic8.bin",      0x1000, 0x0800, CRC(a8256dfe) SHA1(b3dfb915ba4367c8c73a8cc6fb02d98ec148f5a1) )
 
@@ -1025,7 +1487,7 @@ ROM_START( fitterbl )
 	ROM_LOAD( "ic30.bin",     0x0000, 0x0800, CRC(1b18faee) SHA1(b4002e2fdaa6bb966da4faa46ac56751a3841f5f) ) // sldh
 	ROM_LOAD( "ic31.bin",     0x0800, 0x0800, CRC(76cf4394) SHA1(5dc13bd5fc92ce4ce12bab60576292a6028891c3) ) // sldh
 
-	ROM_REGION( 0x1800, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x1800, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "ic9.bin",      0x0000, 0x0800, CRC(394676a2) SHA1(5bd26d717e25b7c192af8173db9ae18371dbcfbe) ) // aldh
 	ROM_LOAD( "ic10.bin",     0x1000, 0x0800, CRC(a38d708d) SHA1(6632392cece34332a2a4427ec14d95f201319c67) )
 
@@ -1045,7 +1507,7 @@ ROM_START( ttfitter )
 	ROM_LOAD( "ttfitter.u30", 0x0000, 0x0800, CRC(4055b5ca) SHA1(abf8f9e830b1190fb87896e1fb3adca8f9e18df1) )
 	ROM_LOAD( "ttfitter.u31", 0x0800, 0x0800, CRC(c9d8c1cc) SHA1(66d0840182ede356c53cd1f930ea8abf86094ab7) )
 
-	ROM_REGION( 0x1800, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x1800, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "ttfitter.u9",  0x0000, 0x0800, CRC(a6799a37) SHA1(7864cb255bff976630b6e03b1683f7d3ccd0a80f) )
 	ROM_LOAD( "ttfitter.u8",  0x1000, 0x0800, CRC(a8256dfe) SHA1(b3dfb915ba4367c8c73a8cc6fb02d98ec148f5a1) )
 
@@ -1065,7 +1527,7 @@ ROM_START( intrepid )
 	ROM_LOAD( "ic22.7",       0x0000, 0x0800, CRC(1a7cc392) SHA1(bb800eb1c9f22f5f9c3a2636964f5ab78ddcd2fb) )
 	ROM_LOAD( "ic23.6",       0x0800, 0x0800, CRC(91ca7097) SHA1(98e40f3059dfd972e38db5642479dc22cdc4a302) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "ic9.9",        0x0000, 0x1000, CRC(8c70d18d) SHA1(785099c947ee1fe19196dfb02752cc849640fe21) )
 	ROM_LOAD( "ic8.8",        0x1000, 0x1000, CRC(04d067d3) SHA1(aeb763e658cd3d0bd849cdae6af55cb1008b2143) )
 
@@ -1085,7 +1547,7 @@ ROM_START( intrepid2 )
 	ROM_LOAD( "intrepid.007", 0x0000, 0x0800, CRC(f85ead07) SHA1(72479a9b49dd9c629480a2ce72bdd09fbb12b25d) )
 	ROM_LOAD( "intrepid.006", 0x0800, 0x0800, CRC(9eb6c61b) SHA1(a168fa634b6909c2ea484c2bbaa5afee2a5fe616) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "ic9.9",        0x0000, 0x1000, CRC(8c70d18d) SHA1(785099c947ee1fe19196dfb02752cc849640fe21) )
 	ROM_LOAD( "ic8.8",        0x1000, 0x1000, CRC(04d067d3) SHA1(aeb763e658cd3d0bd849cdae6af55cb1008b2143) )
 
@@ -1105,7 +1567,7 @@ ROM_START( intrepidb )
 	ROM_LOAD( "ic22.bin",       0x0000, 0x0800, CRC(f85ead07) SHA1(72479a9b49dd9c629480a2ce72bdd09fbb12b25d) )
 	ROM_LOAD( "ic23.bin",       0x0800, 0x0800, CRC(9eb6c61b) SHA1(a168fa634b6909c2ea484c2bbaa5afee2a5fe616) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "ic9.9",        0x0000, 0x1000, CRC(8c70d18d) SHA1(785099c947ee1fe19196dfb02752cc849640fe21) )
 	ROM_LOAD( "ic8.8",        0x1000, 0x1000, CRC(04d067d3) SHA1(aeb763e658cd3d0bd849cdae6af55cb1008b2143) )
 
@@ -1125,7 +1587,7 @@ ROM_START( intrepidb2 )
 	ROM_LOAD( "7intrepid.prg",       0x0000, 0x0800, CRC(f85ead07) SHA1(72479a9b49dd9c629480a2ce72bdd09fbb12b25d) )
 	ROM_LOAD( "6intrepid.prg",       0x0800, 0x0800, CRC(9eb6c61b) SHA1(a168fa634b6909c2ea484c2bbaa5afee2a5fe616) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "9intrepid.prg",        0x0000, 0x1000, CRC(8c70d18d) SHA1(785099c947ee1fe19196dfb02752cc849640fe21) )
 	ROM_LOAD( "8intrepid.prg",        0x1000, 0x1000, CRC(04d067d3) SHA1(aeb763e658cd3d0bd849cdae6af55cb1008b2143) )
 
@@ -1145,7 +1607,7 @@ ROM_START( intrepidb3)
 	ROM_LOAD( "7intrepid.prg",       0x0000, 0x0800, CRC(f85ead07) SHA1(72479a9b49dd9c629480a2ce72bdd09fbb12b25d) )
 	ROM_LOAD( "6intrepid.prg",       0x0800, 0x0800, CRC(9eb6c61b) SHA1(a168fa634b6909c2ea484c2bbaa5afee2a5fe616) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "9intrepid.prg",        0x0000, 0x1000, CRC(8c70d18d) SHA1(785099c947ee1fe19196dfb02752cc849640fe21) )
 	ROM_LOAD( "8intrepid.prg",        0x1000, 0x1000, CRC(04d067d3) SHA1(aeb763e658cd3d0bd849cdae6af55cb1008b2143) )
 
@@ -1168,7 +1630,7 @@ ROM_START( zaryavos )
 	ROM_LOAD( "ic22.7",       0x0000, 0x0800, NO_DUMP )
 	ROM_LOAD( "ic23.6",       0x0800, 0x0800, NO_DUMP )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "ic9.9",        0x0000, 0x1000, NO_DUMP )
 	ROM_LOAD( "ic8.8",        0x1000, 0x1000, NO_DUMP )
 
@@ -1188,7 +1650,7 @@ ROM_START( dockman )
 	ROM_LOAD( "pe7.22",       0x0000, 0x0800, CRC(d2094e4a) SHA1(57c12555e36017e217c5d4e12d0da1ef1990bc3c) )
 	ROM_LOAD( "pe6.23",       0x0800, 0x0800, CRC(1cf447f4) SHA1(d06e31805e13c868faed32358e2158e9ad18baf4) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "pe8.9",        0x0000, 0x1000, CRC(4d8c2974) SHA1(417b8af3011ff1c4c92d680814cd8f0d902f2b1e) )
 	ROM_LOAD( "pe9.8",        0x1000, 0x1000, CRC(4e4ea162) SHA1(42ad2c82ce6a6eaae52efb75607552ca98e72a2a) )
 
@@ -1208,7 +1670,7 @@ ROM_START( dockmanb ) // on original HT-01A and HT-01B PCBs, Taito license made 
 	ROM_LOAD( "dm7.30",       0x0000, 0x0800, CRC(d2094e4a) SHA1(57c12555e36017e217c5d4e12d0da1ef1990bc3c) )
 	ROM_LOAD( "dm6.31",       0x0800, 0x0800, CRC(1cf447f4) SHA1(d06e31805e13c868faed32358e2158e9ad18baf4) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) // chars and sprites, identical to parent
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites, identical to parent
 	ROM_LOAD( "dm8.ic9",        0x0000, 0x1000, CRC(4d8c2974) SHA1(417b8af3011ff1c4c92d680814cd8f0d902f2b1e) )
 	ROM_LOAD( "dm9.ic8",        0x1000, 0x1000, CRC(4e4ea162) SHA1(42ad2c82ce6a6eaae52efb75607552ca98e72a2a) )
 
@@ -1228,7 +1690,7 @@ ROM_START( dockmanc ) // on original HT-01A and HT-01B PCBs, Taito license made 
 	ROM_LOAD( "dm7.30",       0x0000, 0x0800, CRC(d2094e4a) SHA1(57c12555e36017e217c5d4e12d0da1ef1990bc3c) )
 	ROM_LOAD( "dm6.31",       0x0800, 0x0800, CRC(1cf447f4) SHA1(d06e31805e13c868faed32358e2158e9ad18baf4) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) // chars and sprites
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "dm8.ic9",        0x0000, 0x1000, CRC(4d8c2974) SHA1(417b8af3011ff1c4c92d680814cd8f0d902f2b1e) ) // identical to parent
 	ROM_LOAD( "dm9.ic8",        0x1000, 0x1000, BAD_DUMP CRC(e8572572) SHA1(89e6dcdc1a67c0abbc39746f209f59815b5b8e9c) ) // BADADDR            xxxxxxxxxxx-
 
@@ -1248,7 +1710,7 @@ ROM_START( portman )
 	ROM_LOAD( "pe7.22",       0x0000, 0x0800, CRC(d2094e4a) SHA1(57c12555e36017e217c5d4e12d0da1ef1990bc3c) )
 	ROM_LOAD( "pe6.23",       0x0800, 0x0800, CRC(1cf447f4) SHA1(d06e31805e13c868faed32358e2158e9ad18baf4) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "pe8.9",        0x0000, 0x1000, CRC(4d8c2974) SHA1(417b8af3011ff1c4c92d680814cd8f0d902f2b1e) )
 	ROM_LOAD( "pe9.8",        0x1000, 0x1000, CRC(4e4ea162) SHA1(42ad2c82ce6a6eaae52efb75607552ca98e72a2a) )
 
@@ -1268,7 +1730,7 @@ ROM_START( portmanj )
 	ROM_LOAD( "pa7.ic22",     0x0000, 0x0800, CRC(d2094e4a) SHA1(57c12555e36017e217c5d4e12d0da1ef1990bc3c) )
 	ROM_LOAD( "pa6.ic23",     0x0800, 0x0800, CRC(1cf447f4) SHA1(d06e31805e13c868faed32358e2158e9ad18baf4) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "pa9.ic9",      0x0000, 0x1000, CRC(4d8c2974) SHA1(417b8af3011ff1c4c92d680814cd8f0d902f2b1e) )
 	ROM_LOAD( "pa8.ic8",      0x1000, 0x1000, CRC(4e4ea162) SHA1(42ad2c82ce6a6eaae52efb75607552ca98e72a2a) )
 
@@ -1287,9 +1749,9 @@ ROM_START( theportr ) // uses many components (i.e. the Z80s) marked by SGS, an 
 	ROM_LOAD( "pe7.22", 0x0000, 0x0800, CRC(d2094e4a) SHA1(57c12555e36017e217c5d4e12d0da1ef1990bc3c) )
 	ROM_LOAD( "pm6.7d", 0x0800, 0x0800, CRC(1cf447f4) SHA1(d06e31805e13c868faed32358e2158e9ad18baf4) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) // chars and sprites
-	ROM_LOAD( "pm8.3l", 0x0000, 0x1000, CRC(51097dde) SHA1(afaba4ec8612949f0b3dc551f32195e16b74c3dc) )
-	ROM_LOAD( "pm9.1l", 0x1000, 0x1000, CRC(4e4ea162) SHA1(42ad2c82ce6a6eaae52efb75607552ca98e72a2a) )
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
+	ROM_LOAD( "pm9.1l", 0x0000, 0x1000, CRC(4e4ea162) SHA1(42ad2c82ce6a6eaae52efb75607552ca98e72a2a) )
+	ROM_LOAD( "pm8.3l", 0x1000, 0x1000, CRC(51097dde) SHA1(afaba4ec8612949f0b3dc551f32195e16b74c3dc) )
 
 	ROM_REGION( 0x0020, "proms", 0 )
 	ROM_LOAD( "74s288.5a",   0x0000, 0x0020, CRC(a758b567) SHA1(d188c90dba10fe3abaae92488786b555b35218c5) )
@@ -1306,7 +1768,7 @@ ROM_START( suprmous )
 	ROM_REGION( 0x10000, "audiocpu", 0 )
 	ROM_LOAD( "sm.6",         0x0000, 0x1000, CRC(fba71785) SHA1(56537a64a1e6cffedb8a6bd77e3edfa8aca94822) )
 
-	ROM_REGION( 0x3000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x3000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "sm.8",         0x0000, 0x1000, CRC(2f81ab5f) SHA1(9106255f37398c9d0c7cdc69b13765f5e4daa3bc) )
 	ROM_LOAD( "sm.9",         0x1000, 0x1000, CRC(8463af89) SHA1(d29a2a30727d9bdb21b900c8543541cef49127dc) )
 	ROM_LOAD( "sm.7",         0x2000, 0x1000, CRC(1d476696) SHA1(4ecb06297a29e279e31b9dd3a46642578a893c0b) )
@@ -1327,7 +1789,7 @@ ROM_START( funnymou )
 	ROM_REGION( 0x10000, "audiocpu", 0 )
 	ROM_LOAD( "fm.6",         0x0000, 0x1000, CRC(fba71785) SHA1(56537a64a1e6cffedb8a6bd77e3edfa8aca94822) )
 
-	ROM_REGION( 0x3000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x3000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "fm.8",         0x0000, 0x1000, CRC(dbef9db8) SHA1(2bb070603f79e4acb7821cfa61ea1b4aed6d8e1f) )
 	ROM_LOAD( "fm.9",         0x1000, 0x1000, CRC(700d996e) SHA1(31884ec80b5eb70dc8e96712b5541754997b0ca8) )
 	ROM_LOAD( "fm.7",         0x2000, 0x1000, CRC(e9295071) SHA1(6034b7bc86bf070464af82bf1b9a55da81e864d9) )
@@ -1348,7 +1810,7 @@ ROM_START( machomou )
 	ROM_REGION( 0x10000, "audiocpu", 0 )
 	ROM_LOAD( "mm6.e6",       0x0000, 0x1000, CRC(20816913) SHA1(aed524b54d6ed802f3dd0170b3d9943e2d71b546) )
 
-	ROM_REGION( 0x3000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x3000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "mm8.3c",       0x0000, 0x1000, CRC(062e77cb) SHA1(5fcb509af611d163a2a5c4908959ca6d5df49b37) )
 	ROM_LOAD( "mm9.3a",       0x1000, 0x1000, CRC(a2f0cfb3) SHA1(bfae294cfa2ec9e18141dcda029c4471077df76a) )
 	ROM_LOAD( "mm7.3d",       0x2000, 0x1000, CRC(a6f60ed2) SHA1(7ce12a10546144ce529d41159b593f1bac9b900b) )
@@ -1364,17 +1826,17 @@ ROM_START( rtriv )
 	ROM_LOAD( "rtriv-e.p2",   0x1000, 0x1000, CRC(d6ba213f) SHA1(cca42b87692620661d120b8b02d2be83268b0e38) )
 	ROM_LOAD( "rtriv-e.p3",   0x2000, 0x1000, CRC(b8cf20cd) SHA1(23ffcc27cd19b4e9c1d30bcd318f11a9d6278a08) )
 	ROM_LOAD( "rtriv-i.fc1",  0x3000, 0x1000, CRC(be5dca69) SHA1(9844f4a3d500df41a980f90d7450285740709b93) )
-	/* 0x4000 - 0x4fff question rom space */
+	// 0x4000 - 0x4fff question ROM space
 
 	ROM_REGION( 0x10000, "audiocpu", 0 )
 	ROM_LOAD( "ngames7.22",   0x0000, 0x0800, CRC(871e5a03) SHA1(d2105a8ae1829d493e85bcbbcd152a28f68eb035) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "ngames8.8",    0x1000, 0x1000, BAD_DUMP CRC(f7644e1d) SHA1(d58d0d5739906b602f4c08a2fb9a16c32fcc245b) )
 	ROM_LOAD( "ngames9.9",    0x0000, 0x1000, CRC(db553afc) SHA1(e7561ca0b2a4543c41bf41c96d17784b299ab367) )
-	ROM_RELOAD(               0x1000, 0x1000 ) // reload it until the other rom is re-dumped
+	ROM_RELOAD(               0x1000, 0x1000 ) // reload it until the other ROM is re-dumped
 
-	ROM_REGION( 0x40000, "user1", 0 ) /* Question roms */
+	ROM_REGION( 0x40000, "questions", 0 )
 	ROM_LOAD( "rtriv-1f.d0",  0x00000, 0x8000, CRC(84787af0) SHA1(5c1c74128af2b2d62ae9ba730da500e818b3dbd8) )
 	ROM_LOAD( "rtriv-1f.d1",  0x08000, 0x8000, CRC(ff718059) SHA1(c2620b9116e42c56bf8c9260453f34ce19052601) )
 	ROM_LOAD( "rtriv-1f.l0",  0x10000, 0x8000, CRC(ea43fdea) SHA1(fba341f11649891df4bed20dafda3b4a84756679) )
@@ -1402,89 +1864,49 @@ ROM_START( desertdn )
 	ROM_LOAD( "rs9.bin",  0x0000, 0x1000, CRC(6daf40ca) SHA1(968faf09bdbb2c55c9164b665ad1e091d5eca2fc) )
 	ROM_LOAD( "rs10.bin", 0x1000, 0x1000, CRC(f4fc2c53) SHA1(2eb3991db30083ac942e19bf545aa11476535a91) )
 
-	ROM_REGION( 0x2000, "gfx1", 0 ) /* chars and sprites */
+	ROM_REGION( 0x2000, "gfx", 0 ) // chars and sprites
 	ROM_LOAD( "rs0.bin",  0x0000, 0x1000, CRC(8eb856e8) SHA1(8d94b21662855a1cbd94fa6a3c14ec89ac0128fa) )
 	ROM_LOAD( "rs1.bin",  0x1000, 0x1000, CRC(c051b090) SHA1(7280831c99a3f5a1d4af707bddf5b25a5000cabd) )
 
 	ROM_REGION( 0x0020, "proms", 0 )
-	ROM_LOAD( "mb7051.8j",   0x0000, 0x0020, CRC(a14111f4) SHA1(cc103d91ca01390a68c8a211409f23d8af713296) ) /* BPROM is a Harris M3-7603-5 (82S123N compatible) */
+	ROM_LOAD( "mb7051.8j",   0x0000, 0x0020, CRC(a14111f4) SHA1(cc103d91ca01390a68c8a211409f23d8af713296) ) // BPROM is a Harris M3-7603-5 (82S123N compatible)
 ROM_END
 
-/*
-    Romar Triv questions read handler
-*/
+} // anonymous namespace
 
 
-uint8_t thepit_state::rtriv_question_r(offs_t offset)
-{
-	// Set-up the remap table for every 16 bytes
-	if((offset & 0xc00) == 0x800)
-	{
-		m_remap_address[offset & 0x0f] = ((offset & 0xf0) >> 4) ^ 0x0f;
-	}
-	// Select which rom to read and the high 5 bits of address
-	else if((offset & 0xc00) == 0x400)
-	{
-		m_question_rom = (offset & 0x70) >> 4;
-		m_question_address = ((offset & 0x80) << 3) | ((offset & 0x0f) << 11);
-	}
-	// Read the actual byte from question roms
-	else if((offset & 0xc00) == 0xc00)
-	{
-		uint8_t *ROM = memregion("user1")->base();
-		int real_address;
+GAME( 1981, roundup,    0,        roundup,  roundup,  roundup_state, empty_init, ROT90, "Taito Corporation (Amenip/Centuri license)",  "Round-Up", MACHINE_SUPPORTS_SAVE )
+GAME( 1981, fitter,     roundup,  roundup,  fitter,   roundup_state, empty_init, ROT90, "Taito Corporation",                           "Fitter", MACHINE_SUPPORTS_SAVE )
+GAME( 1981, fitterbl,   roundup,  roundup,  fitter,   roundup_state, empty_init, ROT90, "bootleg",                                     "Fitter (bootleg of Round-Up)", MACHINE_SUPPORTS_SAVE )
+GAME( 1981, ttfitter,   roundup,  roundup,  fitter,   roundup_state, empty_init, ROT90, "Taito Corporation",                           "T.T Fitter (Japan)", MACHINE_SUPPORTS_SAVE )
 
-		real_address = (0x8000 * m_question_rom) | m_question_address | (offset & 0x3f0) | m_remap_address[offset & 0x0f];
+GAME( 1982, thepit,     0,        thepit,   thepit,   roundup_state, empty_init, ROT90, "Zilec Electronics",                           "The Pit", MACHINE_SUPPORTS_SAVE ) // AW == Andy Walker
+GAME( 1982, thepitu1,   thepit,   thepit,   thepit,   roundup_state, empty_init, ROT90, "Zilec Electronics (Centuri license)",         "The Pit (US set 1)", MACHINE_SUPPORTS_SAVE )
+GAME( 1982, thepitu2,   thepit,   thepit,   thepit,   roundup_state, empty_init, ROT90, "Zilec Electronics (Centuri license)",         "The Pit (US set 2)", MACHINE_SUPPORTS_SAVE ) // Bally PCB
+GAME( 1982, thepitu3,   thepit,   thepit,   thepit,   roundup_state, empty_init, ROT90, "Zilec Electronics (Centuri license)",         "The Pit (US set 3)", MACHINE_SUPPORTS_SAVE )
+GAME( 1982, thepitj,    thepit,   thepit,   thepit,   roundup_state, empty_init, ROT90, "Zilec Electronics (Taito license)",           "The Pit (Japan)", MACHINE_SUPPORTS_SAVE )
+GAME( 1982, thehole,    thepit,   thepit,   thepit,   roundup_state, empty_init, ROT90, "bootleg",                                     "The Hole (bootleg of The Pit)", MACHINE_SUPPORTS_SAVE )
 
-		return ROM[real_address];
-	}
+GAME( 1982, dockman,    0,        intrepid, dockman,  roundup_state, empty_init, ROT90, "Taito Corporation",                           "Dock Man (set 1)", MACHINE_SUPPORTS_SAVE )
+GAME( 1982, dockmanb,   dockman,  dockmanb, dockman,  roundup_state, empty_init, ROT90, "Taito Corporation",                           "Dock Man (set 2)", MACHINE_SUPPORTS_SAVE )
+GAME( 1982, dockmanc,   dockman,  dockmanb, dockman,  roundup_state, empty_init, ROT90, "Taito Corporation",                           "Dock Man (set 3)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_SUPPORTS_SAVE ) // one GFX ROM is bad
+GAME( 1982, portman,    dockman,  intrepid, dockman,  roundup_state, empty_init, ROT90, "Taito Corporation (Nova Games Ltd. license)", "Port Man", MACHINE_SUPPORTS_SAVE )
+GAME( 1982, portmanj,   dockman,  intrepid, dockman,  roundup_state, empty_init, ROT90, "Taito Corporation",                           "Port Man (Japan)", MACHINE_SUPPORTS_SAVE )
+GAME( 1982, theportr,   dockman,  theportr, dockman,  roundup_state, empty_init, ROT90, "bootleg",                                     "The Porter (bootleg of Port Man)", MACHINE_WRONG_COLORS | MACHINE_NOT_WORKING | MACHINE_SUPPORTS_SAVE ) // PROM has been dumped, but colours seem wrong
 
-	return 0; // the value read from the configuration reads is discarded
-}
+GAME( 1982, suprmous,   0,        suprmous, suprmous, roundup_state, empty_init, ROT90, "Taito Corporation",                           "Super Mouse", MACHINE_SUPPORTS_SAVE )
+GAME( 1982, funnymou,   suprmous, suprmous, suprmous, roundup_state, empty_init, ROT90, "Taito Corporation (Chuo Co. Ltd license)",    "Funny Mouse (Japan)", MACHINE_SUPPORTS_SAVE ) // Taito PCB
 
-void thepit_state::init_rtriv()
-{
-	// Set-up the weirdest questions read ever done
-	m_maincpu->space(AS_PROGRAM).install_read_handler(0x4000, 0x4fff, read8sm_delegate(*this, FUNC(thepit_state::rtriv_question_r)));
+GAME( 1982, machomou,   0,        suprmous, suprmous, roundup_state, empty_init, ROT90, "Techstar",                                    "Macho Mouse", MACHINE_SUPPORTS_SAVE )
 
-	save_item(NAME(m_question_address));
-	save_item(NAME(m_question_rom));
-	save_item(NAME(m_remap_address));
-}
+GAME( 1982, desertdn,   0,        desertdn, desertdn, roundup_state, empty_init, ROT0,  "Kawakusu (Video Optics license)",             "Desert Dan", MACHINE_SUPPORTS_SAVE ) // export version of Gonta Road-Rush (gfx still contains part of "RUSH")
 
+GAME( 1983, intrepid,   0,        intrepid, intrepid, roundup_state, empty_init, ROT90, "Nova Games Ltd.",                             "Intrepid (set 1)", MACHINE_SUPPORTS_SAVE )
+GAME( 1983, intrepid2,  intrepid, intrepid, intrepid, roundup_state, empty_init, ROT90, "Nova Games Ltd.",                             "Intrepid (set 2)", MACHINE_SUPPORTS_SAVE )
+GAME( 1984, intrepidb,  intrepid, intrepid, intrepidb,roundup_state, empty_init, ROT90, "bootleg (Elsys)",                             "Intrepid (Elsys bootleg, set 1)", MACHINE_SUPPORTS_SAVE )
+GAME( 1984, intrepidb3, intrepid, intrepid, intrepidb,roundup_state, empty_init, ROT90, "bootleg (Elsys)",                             "Intrepid (Elsys bootleg, set 2)", MACHINE_SUPPORTS_SAVE )
+GAME( 1984, intrepidb2, intrepid, intrepid, intrepidb,roundup_state, empty_init, ROT90, "bootleg (Loris)",                             "Intrepid (Loris bootleg)", MACHINE_SUPPORTS_SAVE )
 
-GAME( 1981, roundup,    0,        fitter,   roundup,  thepit_state, empty_init, ROT90, "Taito Corporation (Amenip/Centuri license)",  "Round-Up", MACHINE_SUPPORTS_SAVE )
-GAME( 1981, fitter,     roundup,  fitter,   fitter,   thepit_state, empty_init, ROT90, "Taito Corporation",                           "Fitter", MACHINE_SUPPORTS_SAVE )
-GAME( 1981, fitterbl,   roundup,  fitter,   fitter,   thepit_state, empty_init, ROT90, "bootleg",                                     "Fitter (bootleg of Round-Up)", MACHINE_SUPPORTS_SAVE )
-GAME( 1981, ttfitter,   roundup,  fitter,   fitter,   thepit_state, empty_init, ROT90, "Taito Corporation",                           "T.T Fitter (Japan)", MACHINE_SUPPORTS_SAVE )
+GAME( 1984, zaryavos,   0,        intrepid, intrepid, roundup_state, empty_init, ROT90, "Nova Games of Canada",                        "Zarya Vostoka", MACHINE_NOT_WORKING | MACHINE_SUPPORTS_SAVE )
 
-GAME( 1982, thepit,     0,        thepit,   thepit,   thepit_state, empty_init, ROT90, "Zilec Electronics",                           "The Pit", MACHINE_SUPPORTS_SAVE ) // AW == Andy Walker
-GAME( 1982, thepitu1,   thepit,   thepit,   thepit,   thepit_state, empty_init, ROT90, "Zilec Electronics (Centuri license)",         "The Pit (US set 1)", MACHINE_SUPPORTS_SAVE )
-GAME( 1982, thepitu2,   thepit,   thepit,   thepit,   thepit_state, empty_init, ROT90, "Zilec Electronics (Centuri license)",         "The Pit (US set 2)", MACHINE_SUPPORTS_SAVE ) // Bally PCB
-GAME( 1982, thepitu3,   thepit,   thepit,   thepit,   thepit_state, empty_init, ROT90, "Zilec Electronics (Centuri license)",         "The Pit (US set 3)", MACHINE_SUPPORTS_SAVE )
-GAME( 1982, thepitj,    thepit,   thepit,   thepit,   thepit_state, empty_init, ROT90, "Zilec Electronics (Taito license)",           "The Pit (Japan)", MACHINE_SUPPORTS_SAVE )
-GAME( 1982, thehole,    thepit,   thepit,   thepit,   thepit_state, empty_init, ROT90, "bootleg",                                     "The Hole (bootleg of The Pit)", MACHINE_SUPPORTS_SAVE )
-
-GAME( 1982, dockman,    0,        intrepid, dockman,  thepit_state, empty_init, ROT90, "Taito Corporation",                           "Dock Man (set 1)", MACHINE_SUPPORTS_SAVE )
-GAME( 1982, dockmanb,   dockman,  dockmanb, dockman,  thepit_state, empty_init, ROT90, "Taito Corporation",                           "Dock Man (set 2)", MACHINE_SUPPORTS_SAVE )
-GAME( 1982, dockmanc,   dockman,  dockmanb, dockman,  thepit_state, empty_init, ROT90, "Taito Corporation",                           "Dock Man (set 3)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_SUPPORTS_SAVE ) // one GFX ROM is bad
-GAME( 1982, portman,    dockman,  intrepid, dockman,  thepit_state, empty_init, ROT90, "Taito Corporation (Nova Games Ltd. license)", "Port Man", MACHINE_SUPPORTS_SAVE )
-GAME( 1982, portmanj,   dockman,  intrepid, dockman,  thepit_state, empty_init, ROT90, "Taito Corporation",                           "Port Man (Japan)", MACHINE_SUPPORTS_SAVE )
-GAME( 1982, theportr,   dockman,  theportr, dockman,  thepit_state, empty_init, ROT90, "bootleg",                                     "The Porter (bootleg of Port Man)", MACHINE_WRONG_COLORS | MACHINE_NOT_WORKING | MACHINE_SUPPORTS_SAVE ) // PROM has been dumped, but colours seem wrong
-
-GAME( 1982, suprmous,   0,        suprmous, suprmous, thepit_state, empty_init, ROT90, "Taito Corporation",                           "Super Mouse", MACHINE_SUPPORTS_SAVE )
-GAME( 1982, funnymou,   suprmous, suprmous, suprmous, thepit_state, empty_init, ROT90, "Taito Corporation (Chuo Co. Ltd license)",    "Funny Mouse (Japan)", MACHINE_SUPPORTS_SAVE ) // Taito PCB
-
-GAME( 1982, machomou,   0,        suprmous, suprmous, thepit_state, empty_init, ROT90, "Techstar",                                    "Macho Mouse", MACHINE_SUPPORTS_SAVE )
-
-GAME( 1982, desertdn,   0,        desertdn, desertdn, thepit_state, empty_init, ROT0,  "Kawakusu (Video Optics license)",             "Desert Dan", MACHINE_SUPPORTS_SAVE ) // export version of Gonta Road-Rush (gfx still contains part of "RUSH")
-
-GAME( 1983, intrepid,   0,        intrepid, intrepid, thepit_state, empty_init, ROT90, "Nova Games Ltd.",                             "Intrepid (set 1)", MACHINE_SUPPORTS_SAVE )
-GAME( 1983, intrepid2,  intrepid, intrepid, intrepid, thepit_state, empty_init, ROT90, "Nova Games Ltd.",                             "Intrepid (set 2)", MACHINE_SUPPORTS_SAVE )
-GAME( 1984, intrepidb,  intrepid, intrepid, intrepidb,thepit_state, empty_init, ROT90, "bootleg (Elsys)",                             "Intrepid (Elsys bootleg, set 1)", MACHINE_SUPPORTS_SAVE )
-GAME( 1984, intrepidb3, intrepid, intrepid, intrepidb,thepit_state, empty_init, ROT90, "bootleg (Elsys)",                             "Intrepid (Elsys bootleg, set 2)", MACHINE_SUPPORTS_SAVE )
-GAME( 1984, intrepidb2, intrepid, intrepid, intrepidb,thepit_state, empty_init, ROT90, "bootleg (Loris)",                             "Intrepid (Loris bootleg)", MACHINE_SUPPORTS_SAVE )
-
-GAME( 1984, zaryavos,   0,        intrepid, intrepid, thepit_state, empty_init, ROT90, "Nova Games of Canada",                        "Zarya Vostoka", MACHINE_NOT_WORKING | MACHINE_SUPPORTS_SAVE )
-
-GAME( 198?, rtriv,      0,        intrepid, rtriv,    thepit_state, init_rtriv, ROT90, "Romar",                                       "Romar Triv", MACHINE_WRONG_COLORS | MACHINE_SUPPORTS_SAVE )
+GAME( 198?, rtriv,      0,        rtriv,    rtriv,    rtriv_state,   empty_init, ROT90, "Romar",                                       "Romar Triv", MACHINE_WRONG_COLORS | MACHINE_SUPPORTS_SAVE )
