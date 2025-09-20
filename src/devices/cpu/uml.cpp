@@ -2,7 +2,7 @@
 // copyright-holders:Aaron Giles
 /***************************************************************************
 
-    uml.c
+    uml.cpp
 
     Universal machine language definitions and classes.
 
@@ -427,6 +427,19 @@ public:
 			}
 			convert_to_mov_immediate(inst, val);
 		}
+		else if ((1 << inst.param(2).size()) >= inst.size())
+		{
+			if (inst.flags())
+			{
+				inst.m_opcode = OP_AND;
+				inst.m_param[2] = size_mask(inst);
+			}
+			else
+			{
+				inst.m_opcode = OP_MOV;
+				inst.m_numparams = 2;
+			}
+		}
 	}
 
 	static void roland(instruction &inst)
@@ -663,6 +676,23 @@ public:
 					convert_to_mov_immediate(inst, u64(val));
 			}
 		}
+		else if (inst.param(3).is_immediate_value(1))
+		{
+			// multiplying by unity produces the same value
+			if (!inst.flags())
+			{
+				inst.m_opcode = OP_MOV;
+				inst.m_param[1] = inst.param(2);
+				inst.m_numparams = 2;
+			}
+			else if (!(inst.flags() & FLAG_S) || (inst.opcode() == OP_MULS))
+			{
+				inst.m_opcode = OP_AND;
+				inst.m_param[1] = inst.param(2);
+				inst.m_param[2] = size_mask(inst);
+				inst.m_numparams = 3;
+			}
+		}
 	}
 
 	template <typename Short, typename Long>
@@ -701,6 +731,20 @@ public:
 				convert_to_mov_immediate(inst, u64(val));
 			}
 		}
+		else if (inst.param(2).is_immediate_value(1))
+		{
+			// multiplying by unity produces the same value
+			if (inst.flags())
+			{
+				inst.m_opcode = OP_AND;
+				inst.m_param[2] = size_mask(inst);
+			}
+			else
+			{
+				inst.m_opcode = OP_MOV;
+				inst.m_numparams = 2;
+			}
+		}
 	}
 
 	template <typename Short, typename Long>
@@ -713,13 +757,13 @@ public:
 		truncate_immediate(inst, 2, mask);
 		truncate_immediate(inst, 3, mask);
 
-		// can't optimise overflow flag generation
-		if (inst.flags() & FLAG_V)
+		// can't optimise remainder calculation or overflow flag generation
+		if ((inst.param(0) != inst.param(1)) || (inst.flags() & FLAG_V))
 			return;
 
-		// optimise the quotient-only form with two immediate inputs if not dividing by zero
-		if ((inst.param(0) == inst.param(1)) && inst.param(2).is_immediate() && inst.param(3).is_immediate() && !inst.param(3).is_immediate_value(0))
+		if (inst.param(2).is_immediate() && inst.param(3).is_immediate() && !inst.param(3).is_immediate_value(0))
 		{
+			// optimise the quotient-only form with two immediate inputs if not dividing by zero
 			if (inst.param(2).is_immediate_value(0))
 			{
 				// dividing zero by anything yields zero
@@ -734,6 +778,23 @@ public:
 					convert_to_mov_immediate(inst, u32(Short(u32(inst.param(2).immediate())) / Short(u32(inst.param(3).immediate()))));
 				else
 					convert_to_mov_immediate(inst, u64(Long(inst.param(2).immediate()) / Long(inst.param(3).immediate())));
+			}
+		}
+		else if (inst.param(3).is_immediate_value(1))
+		{
+			// dividing by unity produces the dividend
+			if (inst.flags())
+			{
+				inst.m_opcode = OP_AND;
+				inst.m_param[1] = inst.param(2);
+				inst.m_param[2] = size_mask(inst);
+				inst.m_numparams = 3;
+			}
+			else
+			{
+				inst.m_opcode = OP_MOV;
+				inst.m_param[1] = inst.param(2);
+				inst.m_numparams = 2;
 			}
 		}
 	}
@@ -1058,6 +1119,7 @@ public:
 		// convert to NOP or MOV if there's no rotation
 		if (inst.param(2).is_immediate_value(0))
 		{
+			inst.m_flags &= ~FLAG_C; // carry flag unchanged after zero-bit rotate, MOV and NOP won't change carry flag
 			if ((inst.param(0) == inst.param(1)) && (!inst.param(0).is_int_register() || (inst.size() == 8)))
 			{
 				inst.nop();
@@ -1087,6 +1149,32 @@ public:
 	{
 		// truncate immediate address to size
 		truncate_immediate(inst, 0, 0xffffffff);
+	}
+
+	static void ffrint(instruction &inst)
+	{
+		// truncate immediate source to size
+		if (inst.param(2).size() == SIZE_DWORD)
+			truncate_immediate(inst, 1, 0xffffffff);
+	}
+
+	static void ffrflt(instruction &inst)
+	{
+		// convert to FMOV or NOP if the source and destination formats match
+		auto const dst = inst.size();
+		auto const src = inst.param(2).size();
+		if (((4 == dst) && (SIZE_DWORD == src)) || ((8 == dst) && (SIZE_QWORD == src)))
+		{
+			if (inst.param(0) == inst.param(1))
+			{
+				inst.nop();
+			}
+			else
+			{
+				inst.m_opcode = OP_FMOV;
+				inst.m_numparams = 2;
+			}
+		}
 	}
 };
 
@@ -1255,6 +1343,8 @@ void uml::instruction::simplify()
 		case OP_RORC:   simplify_op::rolrc(*this);                    break;
 		case OP_FREAD:  simplify_op::fread(*this);                    break;
 		case OP_FWRITE: simplify_op::fwrite(*this);                   break;
+		case OP_FFRINT: simplify_op::ffrint(*this);                   break;
+		case OP_FFRFLT: simplify_op::ffrflt(*this);                   break;
 
 		default:                                                      break;
 		}
