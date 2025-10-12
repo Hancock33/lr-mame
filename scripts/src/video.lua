@@ -1137,6 +1137,18 @@ if (VIDEOS["RAMDAC"]~=null) then
 	}
 end
 
+---------------------------------------------------
+--
+--@src/devices/video/roc10937.h,VIDEOS["ROC10937"] = true
+---------------------------------------------------
+
+if (VIDEOS["ROC10937"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/video/roc10937.cpp",
+		MAME_DIR .. "src/devices/video/roc10937.h",
+	}
+end
+
 --------------------------------------------------
 --
 --@src/devices/video/saa5050.h,VIDEOS["SAA5050"] = true
@@ -1805,24 +1817,6 @@ if (VIDEOS["ST7626"]~=null) then
 		MAME_DIR .. "src/devices/video/st7626.h",
 	}
 end
-
---------------------------------------------------
---
---@src/devices/video/serialvfd.h,VIDEOS["SERIALVFD"] = true
---------------------------------------------------
-
-if (VIDEOS["SERIALVFD"]~=null) then
-	files {
-		MAME_DIR .. "src/devices/video/serialvfd.cpp",
-		MAME_DIR .. "src/devices/video/serialvfd.h",
-	}
-end
-
-
-
-
-
-
 
 -- cv1k/ep1c12 subtarget hack
 if _OPTIONS["subtarget"]=="arcade" then
