@@ -19055,6 +19055,8 @@ froggervd
 froggrs
 fourplay
 galactica2
+galaktron
+galaktrons3
 galap1
 galap2
 galap4
@@ -19272,7 +19274,6 @@ warofbugu
 zerotime
 zerotimea
 zerotimeb
-galaktron
 zerotimed
 zerotimemc
 zigzagb
@@ -20095,6 +20096,7 @@ mm2b
 mm2c
 mm2d
 mm2e
+mm2f
 mm2nona
 bup
 bupa
@@ -20559,6 +20561,7 @@ cb3h
 cb3micro
 cb3s51
 cbaai
+cbonus
 cherry96
 chry10
 chryangl
@@ -20593,6 +20596,8 @@ cmasteri
 cmasterj
 cmasterk
 cmasterl
+cmasterm
+cmastern
 cmezspin
 cmezspina
 cmezspinb
@@ -20615,6 +20620,7 @@ cmv4a
 cmv4zg
 cmv4zga
 cmv801
+cmv823
 cmwm
 crazybon
 crazybona
@@ -20924,6 +20930,7 @@ lhzb4dhb
 lthyp
 luckycrs
 mgcs3
+mgfx
 mgzz
 mgzz100cn
 oceanpar
@@ -30817,6 +30824,7 @@ multchmpa
 multchmpk
 swatpolc
 tangtang
+tangtanga
 
 @source:misc/esh.cpp
 esh
@@ -33274,6 +33282,7 @@ theboat
 twinbskt
 
 @source:misc/umipoker.cpp
+baccarsp
 saiyukip
 umipoker
 umipokera
@@ -34726,7 +34735,7 @@ pc486mu
 pc9821
 pc9821ap2
 pc9821as
-pc9821ce2
+pc9821ce
 pc9821cx3
 pc9821nr15
 pc9821nr166
@@ -34735,7 +34744,7 @@ pc9821ra20
 pc9821ra266
 pc9821ra333
 pc9821xa16
-pc9821xs
+pc9821xv13
 
 @source:nec/pc98ha.cpp
 pc98lt
@@ -42318,6 +42327,7 @@ wwmspot
 higurashi
 kof2002um
 kof2002umj
+systemy2
 
 @source:sega/zaxxon.cpp
 congo
@@ -42647,6 +42657,7 @@ yumefuda
 champbwl
 champbwla
 doraemon
+doraemonp
 
 @source:seta/downtown.cpp
 arbalest
@@ -43851,6 +43862,7 @@ mycom
 @source:skeleton/ngen.cpp
 386i
 ngen
+ngen386
 ngenb38
 
 @source:skeleton/nordlead.cpp
@@ -44708,6 +44720,9 @@ sothello
 
 @source:success/tonton.cpp
 tonton
+
+@source:sun/e250.cpp
+e250
 
 @source:sun/sun1.cpp
 sun1
