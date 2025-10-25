@@ -8,7 +8,7 @@ System Sacom AMD-98 (AmuseMent boarD)
 Superseded by later NEC in-house sound boards
 
 TODO:
-- not sure if it's AY8910 or YM2203, from a PCB pic it looks with stock AY logos?
+- not sure if it's AY8910 or YM2149, from a PCB pic it looks with stock AY logos?
 - f/f not completely understood;
 - PIT control;
 - PCM section;
@@ -16,14 +16,14 @@ TODO:
 ===================================================================================================
 
 - Known games with AMD-98 support
-    Brown's Run (System Sacom)
-    Dome (System Sacom)
-    Highway Star (System Sacom)
-    Marchen Veil I (System Sacom)
-    Marchen Veil II (System Sacom)
-    Zone (System Sacom)
-    Relics (Bothtec)
-    Thexder (Game Arts)
+  brownrun
+  dome
+  highway
+  marchen1
+  marchen2
+  zone
+  relics
+  thexder
 
 **************************************************************************************************/
 

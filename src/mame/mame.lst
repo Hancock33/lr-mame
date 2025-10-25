@@ -17733,6 +17733,7 @@ hkagerou
 hnrose
 hparadis
 htengoku
+htsubaki
 janshinp
 jongoh
 jongtei
@@ -19472,6 +19473,7 @@ buttdtct
 evolhh
 pokexyqz
 smkatsum
+yuleyuan
 
 @source:handheld/gameking.cpp
 gamekin3
@@ -20011,9 +20013,6 @@ vegaplus
 
 @source:handheld/wildfire.cpp
 wildfire
-
-@source:handheld/yuleyuan.cpp
-yuleyuan
 
 @source:hds/hds200.cpp
 hds200
@@ -30233,6 +30232,9 @@ cwheel
 @source:misc/cybertnk.cpp
 cybertnk
 
+@source:misc/daphor32.cpp
+daphor32
+
 @source:misc/daryde.cpp
 cricket
 pandart
@@ -35809,6 +35811,7 @@ gcs2mgp
 gon100
 goretrop
 gtct885
+h12p1000
 hkb502
 hkb502a
 jl2050
@@ -35825,14 +35828,17 @@ lxcmcybt
 lxcmcycr
 lxcmcydp
 lxcmcydpn
+lxcmcyfd
 lxcmcyfz
 lxcmcypj
 lxcmcypp
+lxcmcyppa
 lxcmcysp
 lxcmcyspn
 lxcmcysw
 lxcyber
 lxcypkdp
+lxcypkpp
 lxcypksp
 matet10
 matetsl

@@ -1,11 +1,9 @@
 // license:BSD-3-Clause
 // copyright-holders:David Haywood
 
-// TODO: identify the CPU type! - there are vectors(?) near the start
-
 #include "emu.h"
 
-#include "cpu/evolution/evo.h"
+#include "cpu/sonix16/sonix16.h"
 
 #include "screen.h"
 #include "speaker.h"
@@ -23,13 +21,15 @@ public:
 
 	void evolhh(machine_config &config);
 
+	void init_yuleyuan();
+
 private:
 	virtual void machine_start() override ATTR_COLD;
 	virtual void machine_reset() override ATTR_COLD;
 
 	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
-	required_device<evo_cpu_device> m_maincpu;
+	required_device<sonix16_device> m_maincpu;
 
 	void evolution_map(address_map &map) ATTR_COLD;
 };
@@ -53,13 +53,13 @@ uint32_t evolution_handheldgame_state::screen_update(screen_device &screen, bitm
 
 void evolution_handheldgame_state::evolution_map(address_map &map)
 {
-	map(0x000000, 0x01ffff).mirror(0x400000).rom().region("maincpu", 0x00000);
+	map(0x000000, 0x1fffff).mirror(0x400000).rom().region("maincpu", 0x00000);
 }
 
 
 void evolution_handheldgame_state::evolhh(machine_config &config)
 {
-	EVOLUTION_CPU(config, m_maincpu, XTAL(16'000'000));
+	SONIX16(config, m_maincpu, XTAL(16'000'000));
 	m_maincpu->set_addrmap(AS_PROGRAM, &evolution_handheldgame_state::evolution_map);
 
 	screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
@@ -100,6 +100,18 @@ ROM_START( pokexyqz )
 	// also has an SD card slot (was empty)
 ROM_END
 
+ROM_START( yuleyuan )
+	ROM_REGION( 0x1000000, "maincpu", 0 )
+	ROM_LOAD( "25l128.bin", 0x0000000, 0x1000000, CRC(51ab49e2) SHA1(ecad532d27efea55031ffd31ac4479c9c4eceae6) )
+ROM_END
+
+void evolution_handheldgame_state::init_yuleyuan()
+{
+	u16 *spi = &memregion("maincpu")->as_u16();
+	for (u32 offset = 0; offset < 0x1000000 / 2; offset++)
+		spi[offset] ^= 0x4890;
+}
+
 } // anonymous namespace
 
 
@@ -111,3 +123,6 @@ CONS( 2018, smkatsum,    0,       0,      evolhh, evolhh, evolution_handheldgame
 CONS( 2020, buttdtct,    0,       0,      evolhh, evolhh, evolution_handheldgame_state, empty_init, "Tomy", "Oshiri Tantei - Puputto Kaiketsu Game (Japan)", MACHINE_NO_SOUND | MACHINE_NOT_WORKING ) // from a pink 'for girls' unit, exists in other colours, software likely the same
 
 CONS( 2015, pokexyqz,    0,       0,      evolhh, evolhh, evolution_handheldgame_state, empty_init, "Takara Tomy", "Pokemon Encyclopedia Z Pokemon XY Quiz Game Rotom (Japan)", MACHINE_NO_SOUND | MACHINE_NOT_WORKING )
+
+// 星座电子宠物机 (virtual pet by 育乐元)
+CONS( 2022, yuleyuan,    0,       0,      evolhh, evolhh, evolution_handheldgame_state, init_yuleyuan, "Yule Yuan", "Xingzuo Dianzi Chongwu Ji", MACHINE_NO_SOUND | MACHINE_NOT_WORKING ) // dumped from yellow model
