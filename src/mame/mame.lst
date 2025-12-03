@@ -520,6 +520,9 @@ vx600
 @source:akai/mpc60.cpp
 mpc60
 
+@source:akai/mpc2000.cpp
+mpc2000xl
+
 @source:akai/mpc3000.cpp
 mpc3000
 
@@ -16347,6 +16350,7 @@ pb1000
 pb2000c
 
 @source:casio/pickytlk.cpp
+csf5550
 jd363
 jd364
 jd366
@@ -16355,6 +16359,7 @@ pickydis
 pickytlk
 plets300
 plets350
+rx850
 
 @source:casio/pv1000.cpp
 pv1000
@@ -16364,6 +16369,14 @@ pv2000
 
 @source:casio/rz1.cpp
 rz1
+
+@source:casio/superjr.cpp
+jd320
+jd360
+jd361
+jd362
+jd367
+jd5000
 
 @source:casio/sk1.cpp
 sk1
@@ -18532,8 +18545,12 @@ fmtownsux
 @source:fujitsu/secoinsa20.cpp
 secoinsa20
 
-@source:funtech/supracan.cpp
-supracan
+@source:funtech/funtech_h8.cpp
+goldnegg
+
+@source:funtech/funtech_z80.cpp
+fts2in1
+poker21
 
 @source:funworld/4roses.cpp
 4roses
@@ -19524,6 +19541,7 @@ bshipg
 comparca
 copspa
 ctstein
+dimension
 einvaderc
 funjacks
 funrlgl
@@ -20402,6 +20420,9 @@ hp86b_004
 @source:hp/hp95lx.cpp
 hp95lx
 
+@source:hp/hp620lx.cpp
+hp620lx
+
 @source:hp/hp700.cpp
 hp700_70
 hp700_92
@@ -20586,10 +20607,6 @@ kungfua
 
 @source:igs/dunhuang.cpp
 dunhuang
-
-@source:igs/funtech.cpp
-fts2in1
-poker21
 
 @source:igs/goldstar.cpp
 3cdpoker
@@ -20952,6 +20969,7 @@ starzan
 tarzan
 tarzan103m
 tarzan106fa
+tarzan201fa
 tarzan202fa
 tarzana
 tarzanb
@@ -21030,6 +21048,7 @@ zhongguo
 
 @source:igs/igs_m027_023vid.cpp
 mxsqy
+mxsqy102tw
 
 @source:igs/igs_m027_033vid.cpp
 huahuas5
@@ -28740,6 +28759,7 @@ narc2
 narc3
 narc4
 narc6
+saurnfrnt
 shimpact
 shimpactp4
 shimpactp5
@@ -29642,6 +29662,8 @@ amspdwya
 
 @source:misc/amstarz80.cpp
 holddraw
+unkamst
+unkamsta
 
 @source:misc/amusco.cpp
 amusco
@@ -32946,6 +32968,7 @@ ch2000d1
 ch2000d2
 ch2000o
 ch2000o10
+ch2000o11
 ch2000o2
 ch2000o3
 ch2000o4
@@ -33120,6 +33143,7 @@ sfruitbdh
 sfruitbh
 sfruitbo
 sfruitbo2
+sfruitbo3
 sfruitboh
 sfruitbv1
 sfruitbv2
@@ -33333,9 +33357,6 @@ tomsadvs
 @source:misc/toratora.cpp
 toratora
 toratorab
-
-@source:misc/triplex.cpp
-triplex
 
 @source:misc/triton.cpp
 triton41
@@ -36101,6 +36122,7 @@ ffight3b2
 iron
 legendsb
 kinstb
+piratdwb
 rushbets
 sblast2b
 tmntmwb
@@ -36768,6 +36790,7 @@ mspacmab2
 mspacmab3
 mspacmab4
 mspacmab5
+mspacmab6
 mspacman
 mspacmanbcc
 mspacmanbco
@@ -46911,6 +46934,13 @@ zerowing
 zerowing1
 zerowingw
 
+@source:torch/quadx.cpp
+quadx
+quadxp
+
+@source:torch/triplex.cpp
+triplex
+
 @source:toaplan/truxton2.cpp
 truxton2
 
@@ -47859,15 +47889,18 @@ tmy_thom
 udance
 xavaero
 xavbaseb
+xavbasebj
 xavbassf
 xavbowl
 xavbowlj
 xavbox
+xavboxj
 xavcheck
 xavgolf
 xavgolfj
 xavjmat
 xavmusic
+xavmusicj
 xavpkjr
 xavtenni
 xavtennij
@@ -47878,6 +47911,9 @@ metamaq2
 @source:ultratec/minicom.cpp
 mcom4_02
 minicom
+
+@source:umc/supracan.cpp
+supracan
 
 @source:unicard/bbcbc.cpp
 bbcbc
@@ -48012,6 +48048,7 @@ ninjakd2a
 ninjakd2b
 ninjakd2c
 omegaf
+omegafa
 omegafs
 rdaction
 robokid
@@ -48273,6 +48310,9 @@ vgmplay
 @source:virtual/wavesynth.cpp
 wavesynth
 
+@source:virtual/utdsp563xx.cpp
+utdsp563xx
+
 @source:visual/v100.cpp
 v100
 
@@ -48496,7 +48536,7 @@ iqunlimgr
 kidsupstar
 
 @source:vtech/laser3k.cpp
-las3000
+laser3k
 
 @source:vtech/lcmate2.cpp
 lcmate2
