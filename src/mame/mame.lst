@@ -17907,6 +17907,7 @@ janputer
 janputera
 jansou
 jansoua
+janyou
 janyoup2
 janyoup2702
 janyoup2a
@@ -17942,6 +17943,7 @@ seljan
 suzume
 tahjong
 tontonb
+tontonba
 
 @source:eaca/cgenie.cpp
 cgenie
@@ -20749,6 +20751,10 @@ feverchtw
 feverchw4
 fl7_3121
 fl7_50
+fl7_50_gs01
+fl7_50_gs02
+fl7_50_gs03
+fl7_50_gs04
 fl7_500
 fl7_1000
 fl7_2000
@@ -21363,6 +21369,7 @@ kov3hd101
 @source:igs/spoker.cpp
 3super8
 dafuwng3
+dahuangg
 hsheng2
 huahuas2
 huahuas2a
@@ -32407,6 +32414,7 @@ czmon_8c
 czmon_8d
 czmon_8e
 czmon_8f
+czmon_8g
 czmon_9a
 czmon_9b
 czmon_9c
@@ -33437,9 +33445,6 @@ vparadis2
 
 @source:misc/unkgolf.cpp
 unkgolf
-
-@source:misc/unkhorse.cpp
-unkhorse
 
 @source:misc/unkpoker.cpp
 unkpoker
@@ -35249,6 +35254,7 @@ legionj2
 legionjb
 legionjb2
 skyrobo
+skyrobobl
 terraf
 terrafb
 terrafj
@@ -35650,6 +35656,7 @@ herbiedk
 herodk
 herodku
 hunchbkd
+jammin
 jrking
 maguila
 pestplce
@@ -41801,6 +41808,7 @@ wrestwar1
 wrestwar1d
 wrestwar2
 wrestwar2d
+wwthomas
 
 @source:sega/segas16b_isgsm.cpp
 isgsm
@@ -42374,6 +42382,7 @@ ddcrewbl
 dduxbl
 eswatbl
 eswatbl2
+eswatbl3
 goldnaxeb1
 goldnaxeb2
 iqpipe
@@ -44424,6 +44433,9 @@ bbustersja
 dmndrby
 dmndrbya
 dmndrbybl
+
+@source:snk/drderby.cpp
+drderby
 
 @source:snk/hng64.cpp
 bbust2
@@ -47212,6 +47224,7 @@ pvmil8
 pvmilfin
 pvwwcas
 rad_ftet
+rad_ftetp
 rad_sinv
 rad_tetr
 sudelan
