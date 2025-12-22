@@ -2,7 +2,7 @@
 // copyright-holders:Phil Stroffolino
 /*******************************************************************************
 
-Break Thru Doc. Data East (1986)
+Break Thru (C) Data East (1986)
 
 driver by Phil Stroffolino
 
@@ -94,10 +94,10 @@ upper PCB - 3002A
 Notes:
 
       Chips:
-      HD68A09P : 3G1-UL-HD68A09P Japan (DIP40)
-      HD6809EP : 5M1-HD6809EP Japan (DIP40)
-       YM2203C : Yamaha YM2203C-5X-18-89-F (DIP40)
-        YM3526 : Yamaha YM3526-61-09-75-E (DIP40)
+      HD68A09P : 3G1-UL-HD68A09P Japan (DIP40) @ 6.0MHz
+      HD6809EP : 5M1-HD6809EP Japan (DIP40) @ 1.5MHz
+       YM2203C : Yamaha YM2203C-5X-18-89-F (DIP40) @ 1.5MHz
+        YM3526 : Yamaha YM3526-61-09-75-E (DIP40) @ 3.0MHz
 
       ROMs:
     1,2,3,5,6,7,8 : Intel IP27256
@@ -149,7 +149,7 @@ Notes:
         VSync = HSync / Vertical Frame Length
               = HSync / (VDisplay + VBlank)
               = 15.625kHz / (240 + 32)
-              = 57.444855Hz
+              = 57.444855Hz (measured 57.40Hz on brkthru)
 
 *******************************************************************************/
 
@@ -180,13 +180,15 @@ public:
 		m_maincpu(*this, "maincpu"),
 		m_audiocpu(*this, "audiocpu"),
 		m_gfxdecode(*this, "gfxdecode"),
-		m_palette(*this, "palette")
+		m_palette(*this, "palette"),
+		m_flipswitch(*this, "FLIP")
 	{ }
 
 	void brkthru(machine_config &config);
 	void darwin(machine_config &config);
 
 	DECLARE_INPUT_CHANGED_MEMBER(coin_inserted);
+	DECLARE_INPUT_CHANGED_MEMBER(flipscreen_switch) { flipscreen_w(m_flipscreen); }
 
 protected:
 	virtual void machine_start() override ATTR_COLD;
@@ -213,8 +215,10 @@ private:
 	required_device<cpu_device> m_audiocpu;
 	required_device<gfxdecode_device> m_gfxdecode;
 	required_device<palette_device> m_palette;
+	required_ioport m_flipswitch;
 
 	void control_w(uint8_t data);
+	void flipscreen_w(int state);
 	void bgscroll_w(uint8_t data);
 	void int_enable_w(uint8_t data);
 	void bgram_w(offs_t offset, uint8_t data);
@@ -355,7 +359,7 @@ void brkthru_state::draw_sprites(bitmap_ind16 &bitmap, const rectangle &cliprect
 
 	for (int offs = 0; offs < m_spriteram.bytes(); offs += 4)
 	{
-		if ((m_spriteram[offs] & 0x09) == prio)  // Enable && Low Priority
+		if ((m_spriteram[offs] & 0x09) == prio) // enabled && low priority
 		{
 			int sx = 240 - m_spriteram[offs + 3];
 			if (sx < -7)
@@ -364,27 +368,28 @@ void brkthru_state::draw_sprites(bitmap_ind16 &bitmap, const rectangle &cliprect
 			int sy = 240 - m_spriteram[offs + 2];
 			int code = m_spriteram[offs + 1] + 128 * (m_spriteram[offs] & 0x06);
 			int color = (m_spriteram[offs] & 0xe0) >> 5;
-			if (m_flipscreen)
+			int flip = flip_screen();
+			if (flip)
 			{
 				sx = 240 - sx;
 				sy = 240 - sy;
 			}
 
-			if (m_spriteram[offs] & 0x10)    // double height
+			if (m_spriteram[offs] & 0x10) // double height
 			{
-				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code & ~1, color, m_flipscreen, m_flipscreen, sx, m_flipscreen ? sy + 16 : sy - 16, 0);
-				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code | 1, color, m_flipscreen, m_flipscreen, sx, sy, 0);
+				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code & ~1, color, flip, flip, sx, flip ? sy + 16 : sy - 16, 0);
+				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code | 1, color, flip, flip, sx, sy, 0);
 
 				// redraw with wraparound
-				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code & ~1, color, m_flipscreen, m_flipscreen, sx,(m_flipscreen ? sy + 16 : sy - 16) + 256, 0);
-				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code | 1, color, m_flipscreen, m_flipscreen, sx, sy + 256, 0);
+				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code & ~1, color, flip, flip, sx,(flip ? sy + 16 : sy - 16) + 256, 0);
+				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code | 1, color, flip, flip, sx, sy + 256, 0);
 			}
 			else
 			{
-				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code, color, m_flipscreen, m_flipscreen, sx, sy, 0);
+				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code, color, flip, flip, sx, sy, 0);
 
 				// redraw with wraparound
-				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code, color, m_flipscreen, m_flipscreen, sx, sy + 256, 0);
+				m_gfxdecode->gfx(9)->transpen(bitmap, cliprect, code, color, flip, flip, sx, sy + 256, 0);
 			}
 		}
 	}
@@ -417,6 +422,13 @@ uint32_t brkthru_state::screen_update(screen_device &screen, bitmap_ind16 &bitma
  *
  *************************************/
 
+void brkthru_state::flipscreen_w(int state)
+{
+	// screen flip is handled both by software and hardware
+	flip_screen_set(state ^ m_flipswitch->read());
+	m_flipscreen = state;
+}
+
 void brkthru_state::control_w(uint8_t data)
 {
 	// bit 0-2 = ROM bank select
@@ -430,12 +442,7 @@ void brkthru_state::control_w(uint8_t data)
 	}
 
 	// bit 6 = screen flip
-	if (m_flipscreen != (data & 0x40))
-	{
-		m_flipscreen = data & 0x40;
-		m_bg_tilemap->set_flip(m_flipscreen ? (TILEMAP_FLIPY | TILEMAP_FLIPX) : 0);
-		m_fg_tilemap->set_flip(m_flipscreen ? (TILEMAP_FLIPY | TILEMAP_FLIPX) : 0);
-	}
+	flipscreen_w(BIT(data, 6));
 
 	// bit 7 = high bit of scroll
 	m_bgscroll = (m_bgscroll & 0xff) | ((data & 0x80) << 1);
@@ -449,7 +456,7 @@ void brkthru_state::bgscroll_w(uint8_t data)
 
 void brkthru_state::int_enable_w(uint8_t data)
 {
-	// bit 0 = IRQ enable, bit 1 = NMI enable
+	// bit 0 = IRQ disable, bit 1 = NMI enable
 	m_int_enable = data;
 
 	if (data & 1)
@@ -585,14 +592,15 @@ static INPUT_PORTS_START( brkthru )
 	PORT_DIPNAME( 0x10, 0x10, DEF_STR( Allow_Continue ) ) PORT_DIPLOCATION("SW2:5") // Manual says ALWAYS OFF
 	PORT_DIPSETTING(    0x00, DEF_STR( No ) )
 	PORT_DIPSETTING(    0x10, DEF_STR( Yes ) )
-	// According to the manual, bit 5 should control Flip Screen
-//  PORT_DIPNAME( 0x20, 0x20, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:6")
-//  PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
-//  PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 	// SW2:7,8 ALWAYS OFF according to the manual
 	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_COIN1 ) PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(brkthru_state::coin_inserted), 0)
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_COIN2 ) PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(brkthru_state::coin_inserted), 0)
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_SERVICE1 ) PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(brkthru_state::coin_inserted), 0)
+
+	PORT_START("FLIP") // hardware switch
+	PORT_DIPNAME( 0x01, 0x00, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:6") PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(brkthru_state::flipscreen_switch), 0)
+	PORT_DIPSETTING(    0x00, DEF_STR( Off ) )
+	PORT_DIPSETTING(    0x01, DEF_STR( On ) )
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( brkthruj )
@@ -631,7 +639,7 @@ static INPUT_PORTS_START( darwin )
 	PORT_DIPSETTING(    0x40, DEF_STR( On ) )
 	PORT_DIPUNKNOWN_DIPLOC( 0x80, 0x80, "SW1:8" )   // Manual says must be OFF
 
-	PORT_MODIFY("DSW2_COIN")    // modified by Shingo Suzuki 1999/11/02
+	PORT_MODIFY("DSW2_COIN")
 	PORT_DIPNAME( 0x01, 0x01, DEF_STR( Lives ) ) PORT_DIPLOCATION("SW2:1")
 	PORT_DIPSETTING(    0x01, "3" )
 	PORT_DIPSETTING(    0x00, "5" )
@@ -643,11 +651,8 @@ static INPUT_PORTS_START( darwin )
 	PORT_DIPSETTING(    0x08, DEF_STR( Medium ) )
 	PORT_DIPSETTING(    0x04, DEF_STR( Hard ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( Hardest ) )
-	// According to the manual, bit 5 should control Flip Screen
-//  PORT_DIPNAME( 0x20, 0x20, DEF_STR( Flip_Screen ) ) PORT_DIPLOCATION("SW2:6")
-//  PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
-//  PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 	// SW2:5,7,8 ALWAYS OFF according to the manual
+	PORT_DIPUNKNOWN_DIPLOC( 0x10, 0x10, "SW2:5" )
 	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_COIN1 ) PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(brkthru_state::coin_inserted), 0)
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_COIN2 ) PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(brkthru_state::coin_inserted), 0)
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_SERVICE1 ) PORT_CHANGED_MEMBER(DEVICE_SELF, FUNC(brkthru_state::coin_inserted), 0)
@@ -759,10 +764,10 @@ void brkthru_state::vblank_irq(int state)
 void brkthru_state::brkthru(machine_config &config)
 {
 	// basic machine hardware
-	MC6809E(config, m_maincpu, 12_MHz_XTAL / 8); // 1.5 MHz ?
+	MC6809E(config, m_maincpu, 12_MHz_XTAL / 8);
 	m_maincpu->set_addrmap(AS_PROGRAM, &brkthru_state::brkthru_main_map);
 
-	MC6809(config, m_audiocpu, 12_MHz_XTAL / 2); // 1.5 MHz ?
+	MC6809(config, m_audiocpu, 12_MHz_XTAL / 2);
 	m_audiocpu->set_addrmap(AS_PROGRAM, &brkthru_state::sound_map);
 
 	// video hardware
