@@ -419,7 +419,6 @@ tetfight
 
 @source:act/apricot.cpp
 apricot
-apricotxi
 
 @source:act/apricotf.cpp
 f1
@@ -28467,6 +28466,7 @@ mlander
 mlandera
 moonbase
 moonbasea
+mraker
 orbite
 ozmawars
 ozmawars2
@@ -43890,6 +43890,9 @@ fs3216
 @source:skeleton/ft68m.cpp
 ft68m
 
+@source:skeleton/gamebox.cpp
+gamebox
+
 @source:skeleton/ganbaremo.cpp
 ganbaremo
 
@@ -44962,6 +44965,9 @@ victor5a
 victor6
 victor6a
 victor6b
+
+@source:subsino/subsino_kr_h8.cpp
+modcart
 
 @source:subsino/subsino2.cpp
 bishjan
