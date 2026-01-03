@@ -239,7 +239,7 @@ void jaguar_state::sound_reset()
 
 uint16_t jaguar_state::jerry_regs_r(offs_t offset)
 {
-	if (offset != JINTCTRL && offset != JINTCTRL+2)
+	if (offset != JINTCTRL && offset != JINTCTRL+2 && !machine().side_effects_disabled())
 		logerror("%s:jerry read register @ F10%03X\n", machine().describe_context(), offset * 2);
 
 	switch (offset)
@@ -285,7 +285,6 @@ template <unsigned which> TIMER_CALLBACK_MEMBER(jaguar_state::jpit_update)
 
 	// - mutntpng/cybermor wants these irqs
 	// - atarikrt/feverpit also expects this, unconditionally
-	// TODO: fixing atarikrt causes ironsold/ddragon5 black screen regression at startup, why?
 	m_dsp->set_input_line(2 + which, ASSERT_LINE);
 
 	update_jpit_timer(which);
@@ -404,9 +403,12 @@ void jaguar_state::update_serial_timer()
 		case 0x00:
 			m_serial_timer->adjust(attotime::never);
 			break;
+		// TODO: atarikrt uses SMODE 0x05 but still expects an irq?
+		case 0x05:
 		case 0x15:
 		{
-			attotime rate = attotime::from_hz(m_dsp->clock()) * (32 * 2 * (m_serial_frequency + 1));
+			attotime rate = attotime::from_ticks(32 * 2 * (m_serial_frequency + 1), m_dsp->clock());
+			//attotime rate = attotime::from_hz(m_dsp->clock()) * (32 * 2 * (m_serial_frequency + 1));
 			m_serial_timer->adjust(rate, 0, rate);
 			break;
 		}
