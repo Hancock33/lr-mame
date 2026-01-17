@@ -607,6 +607,12 @@ void jaguar_state::blitter_w(offs_t offset, uint32_t data, uint32_t mem_mask)
 	}
 
 	// TODO: B_STOP (for collision detection, assuming anything ever used this)
+	if (offset == B_STOP && ACCESSING_BITS_0_15 && BIT(data, 1))
+	{
+		m_blitter_status = 1;
+		m_blitter_done_timer->adjust(attotime::never);
+	}
+
 
 	LOGMASKED(LOG_BLITTER_WRITE, "%s:Blitter write register @ F022%02X = %08X\n", machine().describe_context(), offset * 4, data);
 #else
@@ -689,8 +695,19 @@ void jaguar_state::tom_regs_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 				break;
 
 			case OBF:   /* clear GPU interrupt */
+			{
 				m_gpu->set_input_line(3, CLEAR_LINE);
+				//m_gpu_regs[OBF] &= ~1;
+
+				// kasumi, valdiser and defender resumes the object processor after the
+				// GPU receives an irq when it writes here
+				// TODO: this is a stopgap setup
+				const u16 hdb1 = ((m_gpu_regs[HDB1] & 0x7ff) / 2);
+
+				m_object_timer->adjust(attotime::zero, m_screen->vpos() * 2 | (hdb1 << 16));
+
 				break;
+			}
 
 			case HP:
 			case HBB:
@@ -823,14 +840,13 @@ TIMER_CALLBACK_MEMBER(jaguar_state::scanline_update)
 	// - valdiser depends on not drawing at display end ...
 	if ((m_gpu_regs[VMODE] & 1) && vc >= (m_gpu_regs[VDB] & 0x7ff) && vc < (m_gpu_regs[VDE] & 0x7ff))
 	{
-		// TODO: why "760"?
-		// Using this as workaround for stack overflows, investigate.
+		// NOTE: 760 is the max size of line buffer, as per the memory mapped ranges
 		const int line_size = 760;
 		uint32_t *dest = &m_screen_bitmap.pix(vc >> 1);
 		int maxx = visarea.right();
 		int hde = effective_hvalue(m_gpu_regs[HDE]) >> 1;
-		uint16_t x, scanline[line_size];
-		uint8_t xx, pixel_width = ((m_gpu_regs[VMODE]>>10)&3)+1;
+		uint16_t x;
+		uint8_t xx, pixel_width = ((m_gpu_regs[VMODE] >> 10) & 3) + 1;
 
 		/* if we are first on this scanline, clear to the border color */
 		if (ENABLE_BORDERS && vc % 2 == 0)
@@ -841,18 +857,20 @@ TIMER_CALLBACK_MEMBER(jaguar_state::scanline_update)
 		}
 
 		/* process the object list for this counter value */
-		process_object_list(vc, scanline);
+		// NOTE: line buffer is still a parameter because there are two of them (alternating display and draw)
+		process_object_list(vc, m_line_buffer);
 
 		/* copy the data to the target, clipping */
+		// TODO: shouldn't happen here, also "pixel_width" is in 0.25 steps not linear
 		if ((m_gpu_regs[VMODE] & 0x106) == 0x002)   /* RGB24 */
 		{
 			for (x = 0; x < 760 && hdb <= maxx && hdb < hde; x+=2)
 			{
 				for (xx = 0; xx < pixel_width; xx++)
 				{
-					uint8_t r = m_pen_table[(scanline[x % line_size]&0xff)|256];
-					uint8_t g = m_pen_table[(scanline[x % line_size]>>8)|512];
-					uint8_t b = m_pen_table[scanline[(x+1) % line_size]&0xff];
+					uint8_t r = m_pen_table[(m_line_buffer[x % line_size]&0xff)|256];
+					uint8_t g = m_pen_table[(m_line_buffer[x % line_size]>>8)|512];
+					uint8_t b = m_pen_table[m_line_buffer[(x+1) % line_size]&0xff];
 					dest[hdb % line_size] = rgb_t(r, g, b);
 					hdb++;
 				}
@@ -864,11 +882,19 @@ TIMER_CALLBACK_MEMBER(jaguar_state::scanline_update)
 			{
 				for (xx = 0; xx < pixel_width; xx++)
 				{
-					dest[hdb % line_size] = m_pen_table[scanline[x % line_size]];
+					dest[hdb % line_size] = m_pen_table[m_line_buffer[x % line_size]];
 					hdb++;
 				}
 			}
 		}
+	}
+	// punt if we are in suspend state (next timer at $f00026)
+	// TODO: this causes a stall in valdiser at "out of time"
+	// GPU r/w the current line buffer for a zoom-in/-out effect.
+	// Removing this check causes double framerate in mutntpng
+	if (m_suspend_object_pointer)
+	{
+		return;
 	}
 
 	/* adjust the timer in a loop, to handle missed cases */
@@ -896,11 +922,6 @@ void jaguar_state::video_start()
 	m_pit_timer = timer_alloc(FUNC(jaguar_state::pit_update), this);
 	m_gpu_sync_timer = timer_alloc(FUNC(jaguar_state::gpu_sync), this);
 
-	adjust_object_timer(0);
-	m_blitter_done_timer->adjust(attotime::never);
-	m_pit_timer->adjust(attotime::never);
-	m_gpu_sync_timer->adjust(attotime::never);
-
 	m_screen_bitmap.allocate(760, 512);
 
 	jagobj_init();
@@ -912,6 +933,18 @@ void jaguar_state::video_start()
 	m_pixel_clock = m_is_cojag ? COJAG_PIXEL_CLOCK.value() : JAGUAR_CLOCK.value();
 }
 
+void jaguar_state::video_reset()
+{
+	m_suspend_object_pointer = 0;
+	m_blitter_status = 1;
+	//m_gpu_regs[OBF] = 0;
+
+	m_blitter_done_timer->adjust(attotime::never);
+	m_pit_timer->adjust(attotime::never);
+	m_gpu_sync_timer->adjust(attotime::never);
+
+	adjust_object_timer(0);
+}
 
 void jaguar_state::device_postload()
 {

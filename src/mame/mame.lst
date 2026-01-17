@@ -1529,6 +1529,7 @@ foxyruby
 gostopac
 hacher
 hapfarm
+hapfarm_in0101a
 hapfarm_in0102b
 keno21
 luckycoin
@@ -18227,6 +18228,7 @@ lastbank
 lpierrot
 mir7hg
 mir7hgt
+sparkle
 ukiyobox
 wcircus
 
@@ -21451,6 +21453,7 @@ spk200ua
 spk201ua
 spk203us
 spk205us
+spk305us
 spk306us
 xjinhuang
 zuanshiw
@@ -24633,6 +24636,7 @@ puzzloopa
 puzzloope
 puzzloopj
 puzzloopk
+puzzloopkbl
 puzzloopu
 ryouran
 ryourano
@@ -28167,6 +28171,7 @@ rivierad
 rivierae
 tictac
 tictaca
+tictacb
 tictacuk
 tictacv
 trvwz
@@ -28821,6 +28826,7 @@ wwfmaniap
 
 @source:midway/midxunit.cpp
 revx
+revx1
 revxp5
 
 @source:midway/midyunit.cpp
@@ -29109,8 +29115,17 @@ pokrwild
 rodent
 
 @source:misc/3do.cpp
-3do
-3do_pal
+3do_fc1
+3do_fc2
+3do_fz1
+3do_fz1e
+3do_fz1j
+3do_fz10
+3do_fz10e
+3do_fz10j
+3do_gdo101
+3do_hc21
+3do_try
 3dobios
 alg3do
 md23do
@@ -43252,10 +43267,8 @@ indigo
 indigo_r4000
 indigo_r4400
 
-@source:sgi/iris1400.cpp
+@source:sgi/iris.cpp
 iris1400
-
-@source:sgi/iris3130.cpp
 iris3130
 
 @source:sgi/iris_power.cpp
@@ -43720,6 +43733,7 @@ ckz80
 @source:skeleton/cle68k.cpp
 dmndhrt
 dmndhrtn
+dmndhrtp
 honeybee
 
 @source:skeleton/clownmgc.cpp
@@ -44034,6 +44048,10 @@ dbzscout
 
 @source:skeleton/kron.cpp
 kron180
+
+
+@source:skeleton/lanmao.cpp
+lanmao
 
 @source:skeleton/leadsinger2.cpp
 leadsng2
@@ -44653,6 +44671,7 @@ satansat
 satansata
 satansatind
 vanguard
+vanguarda
 vanguardc
 vanguardg
 vanguardj

@@ -2,7 +2,7 @@
 // copyright-holders:Patrick Mackinlay
 
 /*
- * SGI IRIS 1400/1500 PM2 processor board
+ * SGI IRIS PM2 processor board
  *
  * Sources:
  *  -
@@ -20,14 +20,17 @@
 
 #include "pm2.h"
 #include "pm2_mmu.h"
+#include "iris_kbd.h"
 
 #include "bus/rs232/rs232.h"
 #include "cpu/m68000/m68000.h"
-#include "machine/mc68681.h"
 #include "machine/input_merger.h"
+#include "machine/mc68681.h"
 
 //#define VERBOSE (LOG_GENERAL)
 #include "logmacro.h"
+
+namespace {
 
 enum status_mask : u16
 {
@@ -66,7 +69,7 @@ public:
 		, m_cpu(*this, "cpu")
 		, m_mmu(*this, "mmu")
 		, m_duart(*this, "duart%u", 0U)
-		, m_port(*this, "port%u", 0U)
+		, m_port(*this, "port%u", 1U)
 		, m_ram(*this, "ram")
 		, m_config(*this, "CONFIG")
 		, m_led(*this, "led")
@@ -117,8 +120,6 @@ private:
 	bool m_installed;
 };
 
-DEFINE_DEVICE_TYPE_PRIVATE(SGI_PM2, device_multibus_interface, sgi_pm2_device, "sgi_pm2", "Silicon Graphics PM2")
-
 void sgi_pm2_device::device_start()
 {
 	save_item(NAME(m_status));
@@ -147,8 +148,13 @@ void sgi_pm2_device::device_reset()
 		m_installed = true;
 	}
 
-	m_status = 0;
+	m_status = STATUS_EN0 | STATUS_EN1;
 	m_exception = 0x0f;
+}
+
+void keyboard_devices(device_slot_interface &device)
+{
+	device.option_add("kbd", IRIS_KBD);
 }
 
 void sgi_pm2_device::device_add_mconfig(machine_config &config)
@@ -166,8 +172,8 @@ void sgi_pm2_device::device_add_mconfig(machine_config &config)
 	int_callback<2>().set_inputline(m_cpu, INPUT_LINE_IRQ2);
 	int_callback<5>().set_inputline(m_cpu, INPUT_LINE_IRQ5);
 
-	input_merger_any_high_device &irq5(INPUT_MERGER_ANY_HIGH(config, "irq5"));
-	irq5.output_handler().set_inputline(m_cpu, INPUT_LINE_IRQ6);
+	input_merger_any_high_device &irq6(INPUT_MERGER_ANY_HIGH(config, "irq6"));
+	irq6.output_handler().set_inputline(m_cpu, INPUT_LINE_IRQ6);
 
 	/*
 	 * UART0: refresh timer (15us)
@@ -183,10 +189,10 @@ void sgi_pm2_device::device_add_mconfig(machine_config &config)
 	 *  0x01 DTRA
 	 *  0x02 DTRB
 	 */
-	MC68681(config, m_duart[0], 3.6864_MHz_XTAL).irq_cb().set(irq5, FUNC(input_merger_any_high_device::in_w<0>));
-	MC68681(config, m_duart[1], 3.6864_MHz_XTAL).irq_cb().set(irq5, FUNC(input_merger_any_high_device::in_w<1>));
+	MC68681(config, m_duart[0], 3.6864_MHz_XTAL).irq_cb().set(irq6, FUNC(input_merger_any_high_device::in_w<0>));
+	MC68681(config, m_duart[1], 3.6864_MHz_XTAL).irq_cb().set(irq6, FUNC(input_merger_any_high_device::in_w<1>));
 
-	RS232_PORT(config, m_port[0], default_rs232_devices, nullptr); // TODO: keyboard
+	RS232_PORT(config, m_port[0], keyboard_devices, nullptr);
 	RS232_PORT(config, m_port[1], default_rs232_devices, "terminal");
 	RS232_PORT(config, m_port[2], default_rs232_devices, nullptr);
 	RS232_PORT(config, m_port[3], default_rs232_devices, nullptr);
@@ -378,3 +384,7 @@ ioport_constructor sgi_pm2_device::device_input_ports() const
 {
 	return INPUT_PORTS_NAME(sgi_pm2);
 }
+
+} // anonymous namespace
+
+DEFINE_DEVICE_TYPE_PRIVATE(SGI_PM2, device_multibus_interface, sgi_pm2_device, "sgi_pm2", "Silicon Graphics PM2")
