@@ -537,6 +537,13 @@ static void check_variables(void)
          autoloadfastforward = true;
    }
 
+   var.key   = CORE_NAME "_coin_limit";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      coin_limit = atoi(var.value);
+   }
+
    var.key   = CORE_NAME "_thread_mode";
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -815,6 +822,9 @@ void retro_init(void)
    if (environ_cb(RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE, NULL))
       libretro_supports_ff_override = true;
 
+   bool achievements = true;
+   environ_cb(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, &achievements);
+
    static struct retro_keyboard_callback keyboard_callback = {retro_keyboard_event};
    environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &keyboard_callback);
 
@@ -838,6 +848,7 @@ void retro_deinit(void)
 void retro_reset(void)
 {
    mame_reset = 1;
+   coin_inserted = 0;
 }
 
 void retro_run(void)
