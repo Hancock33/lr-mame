@@ -727,15 +727,13 @@ void adsp21062_device::COMPUTE(uint32_t opcode)
 				break;
 			}
 
-			// TODO: verify this (last bronx)
-			case 0x1c:
+			case 0x1c:      /* Fm = Fxm * Fym,   Fa = (Fxa + Fya) / 2 */
 			{
 				compute_fmul_avg(fm, fxm, fym, fa, fxa, fya);
 				break;
 			}
 
-			// TODO: verify this (Gunblade NY Score Attack Remix mode)
-			case 0x1d:
+			case 0x1d:      /* Fm = Fxm * Fym,   Fa = ABS Fxa */
 			{
 				compute_fmul_abs(fm, fxm, fym, fa, fxa, fya);
 				break;
@@ -1180,6 +1178,7 @@ void adsp21062_device::POP_STATUS_STACK()
 
 int adsp21062_device::IF_CONDITION_CODE(int cond)
 {
+	// TODO: implement AF flag and correct conditions that depend on it (LT, LE, GE, GT)
 	switch(cond)
 	{
 		case 0x00:  return m_core->astat & AZ;        /* EQ */
@@ -1220,6 +1219,7 @@ int adsp21062_device::IF_CONDITION_CODE(int cond)
 
 int adsp21062_device::DO_CONDITION_CODE(int cond)
 {
+	// TODO: implement AF flag and correct conditions that depend on it (LT, LE, GE, GT)
 	switch(cond)
 	{
 		case 0x00:  return m_core->astat & AZ;        /* EQ */
@@ -2352,7 +2352,7 @@ void adsp21062_device::sharcop_rti()
 /* do until counter expired, LCNTR immediate */
 void adsp21062_device::sharcop_do_until_counter_imm()
 {
-	uint16_t data = (uint16_t)(m_core->opcode >> 24);
+	uint16_t data = uint16_t(m_core->opcode >> 24);
 	int offset = util::sext(m_core->opcode & 0xffffff, 24);
 	uint32_t address = m_core->pc + offset;
 	int type;
