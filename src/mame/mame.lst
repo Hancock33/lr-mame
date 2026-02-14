@@ -24890,6 +24890,7 @@ giclassvr
 @source:konami/gijoe.cpp
 gijoe
 gijoea
+gijoeaa
 gijoeea
 gijoej
 gijoeu
@@ -32040,6 +32041,7 @@ magtouch
 
 @source:misc/majorpkr.cpp
 majorpkr
+majorpkr20
 majorpkra
 majorpkrb
 majorpkrc
@@ -35490,6 +35492,7 @@ iemotom
 kaguya
 kaguya2
 kaguya2f
+kaguyaa
 kanatuen
 korinai
 korinaim
@@ -35782,9 +35785,10 @@ robotech
 
 @source:nintendo/mario.cpp
 mario
-marioe
 mariof
+mariog
 marioj
+marioja
 masao
 
 @source:nintendo/mmagic.cpp
@@ -47085,6 +47089,7 @@ snowbro2ny
 
 @source:toaplan/sunwise.cpp
 burgkids
+monkichi
 othldrby
 pwrkick
 pyutakun
