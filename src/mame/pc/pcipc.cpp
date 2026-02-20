@@ -37,7 +37,6 @@
 #include "machine/i82439tx.h"
 #include "machine/i82443bx_host.h"
 #include "machine/pci.h"
-#include "machine/pci-ide.h"
 #include "machine/w83977tf.h"
 
 #include "softlist_dev.h"
@@ -662,7 +661,6 @@ void pcipc_state::pcipctx(machine_config &config)
 
 	i82371sb_isa_device &isa(I82371SB_ISA(config, "pci:07.0", 0, "maincpu"));
 	isa.boot_state_hook().set(FUNC(pcipc_state::boot_state_award_w));
-//  IDE_PCI(config, "pci:07.1", 0, 0x80867010, 0x03, 0x00000000);
 
 	PCI_SLOT(config, "pci:1", pci_cards, 15, 0, 1, 2, 3, nullptr);
 	PCI_SLOT(config, "pci:2", pci_cards, 16, 1, 2, 3, 0, nullptr);
@@ -695,7 +693,7 @@ void pcipc_state::pciagp(machine_config &config)
 
 	I82371EB_USB (config, "pci:07.2", 0);
 	I82371EB_ACPI(config, "pci:07.3", 0);
-	ACPI_PIIX4   (config, "pci:07.3:acpi", 0);
+	ACPI_PIIX4   (config, "pci:07.3:acpi");
 	SMBUS        (config, "pci:07.3:smbus", 0);
 
 	ISA16_SLOT(config, "board4", 0, "pci:07.0:isabus", isa_internal_devices, "w83977tf", true).set_option_machine_config("w83977tf", winbond_superio_config);
@@ -745,7 +743,7 @@ void pcipc_state::se440bx2(machine_config &config)
 	I82443BX_HOST(config, "pci:00.0", 0, "maincpu", 128*1024*1024);
 	I82443BX_BRIDGE(config, "pci:01.0", 0 );
 
-	i82371eb_isa_device &isa(I82371EB_ISA(config, "pci:07.0", 0, "maincpu"));
+	i82371eb_isa_device &isa(I82371EB_ISA(config, "pci:07.0", 0, "maincpu", true));
 	isa.boot_state_hook().set(FUNC(pcipc_state::boot_state_award_w));
 	isa.smi().set_inputline("maincpu", INPUT_LINE_SMI);
 
@@ -755,9 +753,9 @@ void pcipc_state::se440bx2(machine_config &config)
 
 	I82371EB_USB (config, "pci:07.2", 0);
 	I82371EB_ACPI(config, "pci:07.3", 0);
-//	i82371eb_acpi_device &acpi(I82371EB_ACPI(config, "pci:07.3", 0));
-//	acpi.apmc_en().set("pci:07.0", FUNC(i82371eb_isa_device::apmc_en_w));
-	ACPI_PIIX4   (config, "pci:07.3:acpi", 0);
+//  i82371eb_acpi_device &acpi(I82371EB_ACPI(config, "pci:07.3", 0));
+//  acpi.apmc_en().set("pci:07.0", FUNC(i82371eb_isa_device::apmc_en_w));
+	ACPI_PIIX4   (config, "pci:07.3:acpi");
 	SMBUS        (config, "pci:07.3:smbus", 0);
 
 	ISA16_SLOT(config, "board4", 0, "pci:07.0:isabus", isa_internal_devices, "fdc37m707", true).set_option_machine_config("fdc37m707", smc707_superio_config);
@@ -779,7 +777,7 @@ void pcipc_state::se440bx2(machine_config &config)
 	serport1.cts_handler().set("board4:fdc37m707", FUNC(fdc37c93x_device::ncts2_w));
 
 	// FIXME: int mapping is unchecked for all slots
-	PCI_SLOT(config, "pci:01.0:1", agp_cards, 0, 0, 1, 2, 3, "laguna3d");
+	PCI_SLOT(config, "pci:01.0:1", agp_cards, 1, 0, 1, 2, 3, "laguna3d");
 
 	// TODO: 0c is for YMF740 audio
 	PCI_SLOT(config, "pci:1", pci_cards, 13, 0, 1, 2, 3, nullptr);
@@ -865,5 +863,5 @@ ROM_END
 COMP(1998, pcipc,    0,     0, pcipc,   0, pcipc_state, empty_init, "Hack Inc.", "Sandbox PCI PC (430HX)", MACHINE_NO_SOUND )
 COMP(1998, pcipcs7,  pcipc, 0, pcipcs7, 0, pcipc_state, empty_init, "Hack Inc.", "Sandbox PCI PC (430HX, Socket 7 CPU)", MACHINE_NO_SOUND ) // alternative of above, for running already installed OSes at their nominal speed + fiddling with MMX
 COMP(1998, pcipctx,  0,     0, pcipctx, 0, pcipc_state, empty_init, "Hack Inc.", "Sandbox PCI PC (430TX)", MACHINE_NO_SOUND | MACHINE_NOT_WORKING) // unemulated super I/O
-COMP(1999, pciagp,   0,     0, pciagp,  0, pcipc_state, empty_init, "Hack Inc.", "Sandbox PCI/AGP PC (440BX)", MACHINE_NO_SOUND | MACHINE_NOT_WORKING) // eventually PnP breaks OS booting, AGP cards aren't good enough
-COMP(1998, se440bx2, 0,     0, se440bx2,0, pcipc_state, empty_init, "Intel",     "SE440BX-2 \"Seattle 2\"", MACHINE_NO_SOUND | MACHINE_NOT_WORKING) // Initial rev '98. Black screen, never wake up video card after SMI. Wants better ACPI, eventually do the same SMBus loop as midqslvr.cpp
+COMP(1999, pciagp,   0,     0, pciagp,  0, pcipc_state, empty_init, "Hack Inc.", "Sandbox PCI/AGP PC (440BX)", MACHINE_NO_SOUND | MACHINE_NOT_WORKING) // eventually PnP breaks OS booting, AGP cards aren't good enough, has issues with PCI pin mapper (no ROM present?)
+COMP(1998, se440bx2, 0,     0, se440bx2,0, pcipc_state, empty_init, "Intel",     "SE440BX-2 \"Seattle 2\"", MACHINE_NO_SOUND | MACHINE_NOT_WORKING) // Initial rev in '98. Black screen, never wake up video card after SMI. Wants better ACPI, eventually do the same SMBus loop as midqslvr.cpp

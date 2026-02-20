@@ -255,6 +255,12 @@ void acpi_piix4_device::device_reset()
 	m_gporeg[1] = 0xbfff;
 }
 
+void acpi_piix4_device::device_validity_check(validity_checker &valid) const
+{
+	if (!this->clock())
+		osd_printf_error("%s: clock set to 0 MHz, please use implicit default of 3.5 MHz in config setter instead\n", this->tag());
+}
+
 void acpi_piix4_device::map(address_map &map)
 {
 	// Power Management Status
@@ -283,6 +289,8 @@ void acpi_piix4_device::map(address_map &map)
 		NAME([this] (offs_t offset) { return m_pmcntrl; }),
 		NAME([this] (offs_t offset, u16 data, u16 mem_mask) {
 			COMBINE_DATA(&m_pmcntrl);
+			// TODO: SUS_EN cannot be '1'
+			// (generates a suspend mode if enabled, flips to '0')
 			LOGACPI("PMCNTRL: %04x & %04x\n", data, mem_mask);
 			LOGACPIEX("\tSUS_EN %d SUS_TYPE %d GBL_RLS %d BRLD_EN_BM %d SCI_EN %d\n"
 				, BIT(data, 13)
