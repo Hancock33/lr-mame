@@ -2,25 +2,28 @@
 // copyright-holders:Angelo Salese
 /**************************************************************************************************
 
-Implementation of SiS family (S)VGA chipset (SiS630)
+Implementation of SiS family (S)VGA chipset
 
-VBE 3.0, Multi Buffering & Virtual Scrolling available
+SiS6326: VBE 2.0, Multi Buffering & Virtual Scrolling available
+SiS630:  VBE 3.0, Multi Buffering & Virtual Scrolling available
 
 TODO:
 - Extended 4bpp modes don't work (cfr. SDD item);
 - Refresh rate for extended modes;
-- interlace;
-- linear addressing;
-- HW cursor;
-- Output scaling, cfr. xubuntu 6.10 splash screen at 1024x768x32;
+- interlace scaling;
+- linear addressing
+\- currently hardwired in BAR0, which matches the setup done here. What happens when it don't?
 - Interrupts;
 - Verify single segment mode;
-- AGP/HostBus/Turbo Queue i/f;
-- 2D/3D pipeline;
+- AGP/HostBus/Turbo Queue i/f (as separate device, currently in sis6326 PCI);
 - DDC;
-- Bridge with a secondary TV out (SiS301);
-- Verify matches with other SiS PCI cards, backport;
-- sis630: fails banked modes (different setup?), fails extended start addresses;
+- Bridge with a secondary TV out (SiS301 for '630);
+- Verify matches with earlier SiS PCI cards, backport;
+- win98se: dxdiag eventually craps out at the end of Direct Draw testing, why?
+
+TODO (sis630):
+- Output scaling, cfr. xubuntu 6.10 splash screen at 1024x768x32 (really interlace as above?);
+- fails banked modes (different setup?), fails extended start addresses;
 
 **************************************************************************************************/
 
@@ -34,27 +37,41 @@ TODO:
 
 #include "logmacro.h"
 
-// TODO: later variant of 5598
-// (definitely doesn't have dual segment mode for instance)
-DEFINE_DEVICE_TYPE(SIS6326_VGA, sis6326_vga_device, "sis6326_vga", "SiS 6326 VGA i/f")
-DEFINE_DEVICE_TYPE(SIS630_VGA, sis630_vga_device, "sis630_vga", "SiS 630 VGA i/f")
+#define DEBUG_VRAM_VIEWER 0
+
+// NOTE: several of these are actually MB integrated with different names
+
+// retroactively known as 6201 in drivers
+//DEFINE_DEVICE_TYPE(SIS86C201_VGA, sis86c201_vga_device, "sis86c201_vga", "SiS 86C201 VGA i/f")
+//DEFINE_DEVICE_TYPE(SIS6202_VGA,   sis6202_vga_device,   "sis6202_vga",   "SiS 6202 VGA i/f")
+//DEFINE_DEVICE_TYPE(SIS6205_VGA,   sis6205_vga_device,   "sis6205_vga",   "SiS 6205 VGA i/f")
+//DEFINE_DEVICE_TYPE(SIS6225_VGA,   sis6225_vga_device,   "sis6225_vga",   "SiS 6225 VGA i/f")
+//DEFINE_DEVICE_TYPE(SIS6215_VGA,   sis6215_vga_device,   "sis6215_vga",   "SiS 6215 VGA i/f")
+
+DEFINE_DEVICE_TYPE(SIS6326_VGA,   sis6326_vga_device,   "sis6326_vga",   "SiS 6326 VGA i/f")
+DEFINE_DEVICE_TYPE(SIS630_VGA,    sis630_vga_device,    "sis630_vga",    "SiS 630 VGA i/f")
 
 sis6326_vga_device::sis6326_vga_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: sis6326_vga_device(mconfig, SIS6326_VGA, tag, owner, clock)
 {
+	m_crtc_space_config = address_space_config("crtc_regs", ENDIANNESS_LITTLE, 8, 8, 0, address_map_constructor(FUNC(sis6326_vga_device::crtc_map), this));
 	m_seq_space_config = address_space_config("sequencer_regs", ENDIANNESS_LITTLE, 8, 8, 0, address_map_constructor(FUNC(sis6326_vga_device::sequencer_map), this));
+	m_tvout_space_config = address_space_config("tvout_regs", ENDIANNESS_LITTLE, 8, 8, 0, address_map_constructor(FUNC(sis6326_vga_device::tvout_map), this));
 }
 
 sis6326_vga_device::sis6326_vga_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock)
 	: svga_device(mconfig, type, tag, owner, clock)
+	, m_md20_cb(*this, 0)
+	, m_md21_cb(*this, 0)
+	, m_md23_cb(*this, 0)
 {
 }
 
-sis630_vga_device::sis630_vga_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
-	: sis6326_vga_device(mconfig, SIS630_VGA, tag, owner, clock)
+device_memory_interface::space_config_vector sis6326_vga_device::memory_space_config() const
 {
-	m_crtc_space_config = address_space_config("crtc_regs", ENDIANNESS_LITTLE, 8, 8, 0, address_map_constructor(FUNC(sis630_vga_device::crtc_map), this));
-	m_seq_space_config = address_space_config("sequencer_regs", ENDIANNESS_LITTLE, 8, 8, 0, address_map_constructor(FUNC(sis630_vga_device::sequencer_map), this));
+	auto r = svga_device::memory_space_config();
+	r.emplace_back(std::make_pair(EXT_REG,     &m_tvout_space_config));
+	return r;
 }
 
 void sis6326_vga_device::device_start()
@@ -69,9 +86,13 @@ void sis6326_vga_device::device_start()
 	vga.memory = std::make_unique<uint8_t []>(vga.svga_intf.vram_size);
 	memset(&vga.memory[0], 0, vga.svga_intf.vram_size);
 
+	save_item(NAME(m_crtc_unlock_reg));
+	save_item(NAME(m_seq_unlock_reg));
+	save_item(NAME(m_ramdac_mode));
 	save_item(NAME(m_ext_sr07));
 	save_item(NAME(m_ext_sr0b));
 	save_item(NAME(m_ext_sr0c));
+	save_item(NAME(m_ext_ddc));
 	save_item(NAME(m_ext_sr23));
 	save_item(NAME(m_ext_sr33));
 	save_item(NAME(m_ext_sr34));
@@ -81,16 +102,43 @@ void sis6326_vga_device::device_start()
 	save_item(NAME(m_ext_sr3c));
 	save_item(NAME(m_ext_ge26));
 	save_item(NAME(m_ext_ge27));
+	save_item(NAME(m_linear_address));
+
+	save_item(STRUCT_MEMBER(m_cursor, address_base));
+	save_item(STRUCT_MEMBER(m_cursor, color_cache));
+	save_item(STRUCT_MEMBER(m_cursor, color));
+	save_item(STRUCT_MEMBER(m_cursor, x));
+	save_item(STRUCT_MEMBER(m_cursor, y));
+	save_item(STRUCT_MEMBER(m_cursor, x_preset));
+	save_item(STRUCT_MEMBER(m_cursor, y_preset));
+	save_item(STRUCT_MEMBER(m_cursor, pattern_select));
+	save_item(STRUCT_MEMBER(m_cursor, side_pattern_enable));
+
+	save_item(STRUCT_MEMBER(m_tv, pycin));
+	save_item(STRUCT_MEMBER(m_tv, enyf));
+	save_item(STRUCT_MEMBER(m_tv, encf));
+	save_item(STRUCT_MEMBER(m_tv, tvsense));
 }
 
 void sis6326_vga_device::device_reset()
 {
 	svga_device::device_reset();
 
-	m_unlock_reg = false;
+	m_crtc_unlock_reg = false;
+	m_seq_unlock_reg = false;
+	m_ramdac_mode = 0;
 	m_ext_sr07 = m_ext_sr0b = m_ext_sr0c = m_ext_sr23 = m_ext_sr33 = 0;
 	m_ext_sr34 = m_ext_sr35 = m_ext_sr38 = m_ext_sr39 = m_ext_sr3c = 0;
 	m_ext_ge26 = m_ext_ge27 = 0;
+
+	// everything else shouldn't matter for cursor
+	// initialize fixed part here: HW cannot set any other bit beyond 21 ~ 18.
+	// On win98se this will map at bottom of VRAM i.e. at $3f'fc00 on 4MiB cards
+	m_cursor.address_base = 0x03'fc00;
+
+	m_linear_address[0] = 0;
+	m_linear_address[1] = 0;
+	m_ext_ddc = 0;
 }
 
 void sis6326_vga_device::io_3cx_map(address_map &map)
@@ -128,18 +176,73 @@ void sis6326_vga_device::io_3cx_map(address_map &map)
 	);
 }
 
-void sis6326_vga_device::sequencer_map(address_map &map)
+void sis6326_vga_device::crtc_map(address_map &map)
 {
-	svga_device::sequencer_map(map);
-	// extended ID register
-	map(0x05, 0x05).lrw8(
+	svga_device::crtc_map(map);
+	// Password/Identification Register
+	map(0x80, 0x80).lrw8(
 		NAME([this] (offs_t offset) {
-			return m_unlock_reg ? 0xa1 : 0x21;
+			return m_crtc_unlock_reg ? 0xa1 : 0x21;
 		}),
 		NAME([this] (offs_t offset, u8 data) {
 			// TODO: reimplement me thru memory_view or direct handler override
-			m_unlock_reg = (data == 0x86);
-			//LOG("SR5: Unlock register write %02x (%s)\n", data, m_unlock_reg ? "unlocked" : "locked");
+			m_crtc_unlock_reg = (data == 0x86);
+			LOG("CR80: Unlock register write %02x (%s)\n", data, m_crtc_unlock_reg ? "unlocked" : "locked");
+		})
+	);
+	// ...
+
+	map(0xe0, 0xe0).lrw8(
+		NAME([this] (offs_t offset) -> u8 {
+			if (!m_crtc_unlock_reg)
+			{
+				LOG("CRE0: attempt to read TV OUT index while locked\n");
+				return 0xff;
+			}
+			return m_tvout_index;
+		}),
+		NAME([this] (offs_t offset, u8 data) {
+			if (!m_crtc_unlock_reg)
+			{
+				LOG("CRE0: attempt to write TV OUT index while locked %02x\n", data);
+				return;
+			}
+			m_tvout_index = data;
+		})
+	);
+	map(0xe1, 0xe1).lrw8(
+		NAME([this] (offs_t offset) -> u8 {
+			if (!m_crtc_unlock_reg)
+			{
+				LOG("CRE0: attempt to read TV OUT data while locked [%02x]\n", m_tvout_index);
+				return 0;
+			}
+			return space(EXT_REG).read_byte(m_tvout_index);
+		}),
+		NAME([this] (offs_t offset, u8 data) {
+			if (!m_crtc_unlock_reg)
+			{
+				LOG("CRE0: attempt to write TV OUT data while locked [%02x] %02x\n", m_tvout_index, data);
+				return;
+			}
+			space(EXT_REG).write_byte(m_tvout_index, data);
+		})
+	);
+	// TODO: e2 / e3 accessed (alias of TV OUT?)
+}
+
+void sis6326_vga_device::sequencer_map(address_map &map)
+{
+	svga_device::sequencer_map(map);
+	// Password/Identification register
+	map(0x05, 0x05).lrw8(
+		NAME([this] (offs_t offset) {
+			return m_seq_unlock_reg ? 0xa1 : 0x21;
+		}),
+		NAME([this] (offs_t offset, u8 data) {
+			// TODO: reimplement me thru memory_view or direct handler override
+			m_seq_unlock_reg = (data == 0x86);
+			LOG("SR5: Unlock register write %02x (%s)\n", data, m_seq_unlock_reg ? "unlocked" : "locked");
 		})
 	);
 	/*
@@ -215,6 +318,10 @@ void sis6326_vga_device::sequencer_map(address_map &map)
 	);
 	// x--- ---- True Color RGB select (0) RGB (1) BGR
 	// -xx- ---- MMIO select
+	// -00- ---- Disable
+	// -01- ---- Select A:0000 segment
+	// -10- ---- Select B:0000 segment
+	// -11- ---- Select PCI BAR1
 	// ---x ---- True Color frame rate modulation
 	// ---- x--- Dual Segment register
 	// ---- -x-- I/O gating enable while write-buffer not empty
@@ -248,7 +355,28 @@ void sis6326_vga_device::sequencer_map(address_map &map)
 			m_ext_sr0c = data;
 		})
 	);
-	//map(0x0e, 0x0f) Ext. Config Status (r/o)
+	//map(0x0d, 0x0e) Ext. Config Status (r/o)
+	map(0x0d, 0x0d).lr8(
+		// x--- ---- MD23 Enable 64K ROM
+		// -x-- ---- MD22 Clock Generator Select (0) internal (1) external (test only)
+		// --x- ---- MD21 AGP 2X Transfer enable
+		// ---x ---- MD20 AGP bus enable
+		// ---- x--- MD19 <reserved>
+		// ---- -x-- MD18 NTSC (0) PAL (1)
+		// ---- --x- MD17 Video subsystem power-on disable
+		// ---- ---x MD16 Video subsystem port (0) $3c3 (1) $46e8
+		NAME([this] () {
+			return (m_md23_cb() << 7) | (m_md21_cb() << 5) | (m_md20_cb() << 4) | 1;
+		})
+	);
+	map(0x0e, 0x0e).lr8(
+		// xxx- ---- MD31~MD29 DRAM speed setting (000) SGRAM 66 MHz
+		// ---x ---- MD28 disable VMI interface
+		// ---- x--- MD27 INTA# enable
+		// ---- -x-- MD26 BIOS ROM disable
+		// ---- --xx MD25~MD24 <reserved>
+		NAME([] () { return (0 << 3); })
+	);
 	map(0x0f, 0x10).lrw8(
 		NAME([this] (offs_t offset) {
 			return m_ext_scratch[offset];
@@ -258,16 +386,96 @@ void sis6326_vga_device::sequencer_map(address_map &map)
 			m_ext_scratch[offset] = data;
 		})
 	);
-	//map(0x11, 0x11) DDC register
+	/// DDC register
+	map(0x11, 0x11).lrw8(
+		NAME([this] (offs_t offset) {
+			//LOG("SR11: DDC and Power Control read (%02x)\n", m_ext_ddc);
+			return m_ext_ddc;
+		}),
+		NAME([this] (offs_t offset, u8 data) {
+			LOG("SR11: DDC and Power Control %02x\n", data);
+			m_ext_ddc = data;
+		})
+	);
+
 	//map(0x12, 0x12) Ext. Horizontal Overflow
 	//map(0x13, 0x13) Ext. Clock Generator / 25MHz/28MHz Video Clock
-	//map(0x14, 0x16) HW Cursor Color 0
-	//map(0x17, 0x19) HW Cursor Color 1
-	//map(0x1a, 0x1b) HW Cursor Horizontal Start 0/1
+	// HW Cursor Color 0/1
+	map(0x14, 0x19).lrw8(
+		NAME([this] (offs_t offset) {
+			return m_cursor.color_cache[offset];
+		}),
+		NAME([this] (offs_t offset, u8 data) {
+			m_cursor.color_cache[offset] = data;
+			const u8 pen_color = offset / 3;
+			const u8 pal_offset = pen_color * 3;
+			// RGB555 format
+			m_cursor.color[pen_color] = (
+				  (pal5bit(m_cursor.color_cache[0 + pal_offset]) << 16)
+				| (pal5bit(m_cursor.color_cache[1 + pal_offset]) << 8)
+				| (pal5bit(m_cursor.color_cache[2 + pal_offset]) << 0)
+			);
+		})
+	);
+	// HW Cursor Horizontal Start 0/1
+	map(0x1a, 0x1b).lrw8(
+		NAME([this] (offs_t offset) { return (offset) ? m_cursor.x >> 8 : m_cursor.x & 0xff; }),
+		NAME([this] (offs_t offset, u8 data) {
+			if (offset)
+			{
+				m_cursor.x &= 0x00ff;
+				m_cursor.x |= (data & 0x07) << 8;
+			}
+			else
+			{
+				m_cursor.x &= 0xff00;
+				m_cursor.x |= data & 0xff;
+			}
+		})
+	);
 	//map(0x1c, 0x1c) HW Cursor Horizontal Preset
-	//map(0x1d, 0x1e) HW Cursor Vertical Start 0/1
+	// HW Cursor Vertical Start 0/1
+	map(0x1d, 0x1e).lrw8(
+		NAME([this] (offs_t offset) {
+			if (offset)
+				return (m_cursor.pattern_select << 4) | (m_cursor.side_pattern_enable << 3) | ((m_cursor.y >> 8) & 7);
+			return m_cursor.y & 0xff;
+		}),
+		NAME([this] (offs_t offset, u8 data) {
+			if (offset)
+			{
+				m_cursor.y &= 0x00ff;
+				m_cursor.y |= (data & 0x07) << 8;
+				m_cursor.side_pattern_enable = !!BIT(data, 3);
+				m_cursor.pattern_select = (data >> 4) & 0x0f;
+			}
+			else
+			{
+				m_cursor.y &= 0xff00;
+				m_cursor.y |= data & 0xff;
+			}
+		})
+	);
+
 	//map(0x1f, 0x1f) HW Cursor Vertical Preset
 	//map(0x20, 0x21) Linear Addressing Base Address 0/1
+	map(0x20, 0x21).lrw8(
+		NAME([this] (offs_t offset) {
+			return m_linear_address[offset];
+		}),
+		NAME([this] (offs_t offset, u8 data) {
+			m_linear_address[offset] = data;
+			LOG("SR%02X: Extended Linear Addressing Base %02x\n", offset + 0x20, data);
+			LOG("\tBase %08x Size %d\n"
+				, (m_linear_address[0] << 19) | ((m_linear_address[1] & 0xf) << 27)
+				// 00 512 KiB
+				// 01 1 MiB
+				// 10 2 MiB
+				// 11 4 MiB
+				, (m_linear_address[1] >> 5) & 3
+			);
+		})
+	);
 	//map(0x22, 0x22) Standby/Suspend Timer
 	map(0x23, 0x23).lrw8(
 		NAME([this] (offs_t offset) {
@@ -401,6 +609,12 @@ void sis6326_vga_device::sequencer_map(address_map &map)
 		NAME([this] (offs_t offset, u8 data) {
 			LOG("SR38: Extended Misc. Control 7 %02x\n", data);
 			m_ext_sr38 = data;
+			m_cursor.address_base &= ~0x3c'0000;
+			m_cursor.address_base |= (data >> 4) << 18;
+			// TODO: doc claims to be line compare disable, may just be bit 10 really?
+			// testable at 1600x1200, needs HW test
+			vga.crtc.line_compare = (vga.crtc.line_compare & 0x3ff) | (BIT(data, 2) * 0xfc00);
+			//vga.crtc.line_compare = (vga.crtc.line_compare & 0x3ff) | (BIT(data, 2) << 10);
 		})
 	);
 	// ---x ---- Select external TVCLK as internal TVCLK enable
@@ -437,6 +651,60 @@ void sis6326_vga_device::sequencer_map(address_map &map)
 		NAME([this] (offs_t offset, u8 data) {
 			LOG("SR3C: Extended Misc. Control 9 %02x\n", data);
 			m_ext_sr3c = data;
+		})
+	);
+}
+
+void sis6326_vga_device::tvout_map(address_map &map)
+{
+	map(0x00, 0x00).lrw8(
+		NAME([this] (offs_t offset) {
+			LOG("VR00: Basic TV Function Control read (%02x)\n", m_tv.control);
+			return m_tv.control;
+		}),
+		NAME([this] (offs_t offset, u8 data) {
+			m_tv.control = data;
+			LOG("VR00: Basic TV Function Control %02x\n", data);
+			LOG("\tFSEL %d COMPN %d SVIDEON %d ENTV %d SHRINK %d REGODD %d\n"
+				, (data >> 5) & 7
+				, !BIT(data, 4)
+				, !BIT(data, 3)
+				, BIT(data, 2)
+				, BIT(data, 1)
+				, BIT(data, 0)
+			);
+		})
+	);
+	// ...
+	map(0x42, 0x42).lrw8(
+		NAME([this] (offs_t offset) { return m_tv.pycin & 0xff; }),
+		NAME([this] (offs_t offset, u8 data) {
+			m_tv.pycin &= 0x0300;
+			m_tv.pycin |= (data & 0xff);
+			LOG("VR42: TV DAC Sense Input Register 1 %02x\n", data);
+		})
+	);
+	map(0x43, 0x43).lrw8(
+		NAME([this] (offs_t offset) {
+			return (m_tv.enyf << 4) | (m_tv.encf << 3) | (m_tv.tvsense << 2) | ((m_tv.pycin >> 8) & 0x3);
+		}),
+		NAME([this] (offs_t offset, u8 data) {
+			LOG("VR43: TV DAC Sense Input Register 2 %02x\n", data);
+			m_tv.enyf = !!BIT(data, 4);
+			m_tv.encf = !!BIT(data, 3);
+			m_tv.tvsense = !!BIT(data, 2);
+			m_tv.pycin &= 0x00ff;
+			m_tv.pycin |= (data & 3) << 8;
+		})
+	);
+	// ---- -x-- RSENY Y signal readback
+	// ---- --x- RSENC Cb & Cr signal readback
+	// ---- ---x RSENCO Composite signal readback
+	map(0x44, 0x44).lr8(
+		NAME([this] (offs_t offset) {
+			LOG("VR44: TV DAC Sense Read-back\n");
+			// Pull high to enable TV mode
+			return 0;
 		})
 	);
 }
@@ -479,6 +747,13 @@ uint16_t sis6326_vga_device::offset()
 	return svga_device::offset();
 }
 
+u16 sis6326_vga_device::line_compare_mask()
+{
+	// trick to make line compare to never occur
+	// (assuming it's true, cfr. above)
+	return 0x3ff | (vga.crtc.line_compare & 0xfc00);
+}
+
 uint8_t sis6326_vga_device::mem_r(offs_t offset)
 {
 	if (svga.rgb8_en || svga.rgb15_en || svga.rgb16_en || svga.rgb24_en || svga.rgb32_en)
@@ -502,10 +777,132 @@ uint32_t sis6326_vga_device::latch_start_addr()
 	return vga.crtc.start_addr_latch << (svga.rgb8_en ? 2 : 0);
 }
 
+// undocumented, win98se access this for X/Y positions to actually work
+// [1]/[3] are probably X/Y preset registers (byte accesses)
+void sis6326_vga_device::cursor_mmio_w(offs_t offset, u16 data, u16 mem_mask)
+{
+	switch(offset)
+	{
+		case 0:
+			COMBINE_DATA(&m_cursor.x);
+			break;
+		case 2:
+			COMBINE_DATA(&m_cursor.y);
+			break;
+	}
+}
+
+uint32_t sis6326_vga_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
+{
+	svga_device::screen_update(screen, bitmap, cliprect);
+
+	// HW cursor
+	if (BIT(m_ramdac_mode, 6))
+	{
+		// TODO: preliminary, likely using pattern_select for switching modes
+		// Drawing specifics aren't really documented beyond what the register does.
+
+		const u32 base_offs = (m_cursor.address_base);
+		const u8 transparent_pen = 2;
+
+		for (int y = 0; y < 64; y ++)
+		{
+			int res_y = y + m_cursor.y;
+			for (int x = 0; x < 64; x++)
+			{
+				int res_x = x + m_cursor.x;
+				if (!cliprect.contains(res_x, res_y))
+					continue;
+				const u32 cursor_address = ((x >> 2) + y * 16) + base_offs;
+				const int xi = (3 - (x & 3)) * 2;
+				u8 cursor_gfx =  (vga.memory[(cursor_address) % vga.svga_intf.vram_size] >> (xi) & 3);
+
+				if (cursor_gfx == transparent_pen)
+					continue;
+
+				// RMW invert (win98se NotePad "I" caret)
+				if (cursor_gfx == 3)
+				{
+					u32 const *dot = &bitmap.pix(res_y, 0);
+					bitmap.pix(res_y, res_x) = dot[res_x] ^ 0xffffff;
+				}
+				else
+					bitmap.pix(res_y, res_x) = m_cursor.color[cursor_gfx & 1];
+			}
+		}
+	}
+
+#if DEBUG_VRAM_VIEWER
+	static int m_test_x = 1024, m_start_offs;
+	static int m_test_trigger = 1;
+	const int m_test_y = cliprect.max_y;
+
+	if(machine().input().code_pressed(JOYCODE_HAT1RIGHT))
+		m_test_x += 1 << (machine().input().code_pressed(JOYCODE_BUTTON2) ? 4 : 0);
+
+	if(machine().input().code_pressed(JOYCODE_HAT1LEFT))
+		m_test_x -= 1 << (machine().input().code_pressed(JOYCODE_BUTTON2) ? 4 : 0);
+
+	//if(machine().input().code_pressed(JOYCODE_HAT1DOWN))
+	//  m_test_y++;
+
+	//if(machine().input().code_pressed(JOYCODE_HAT1UP))
+	//  m_test_y--;
+
+	if(machine().input().code_pressed(JOYCODE_HAT1DOWN))
+		m_start_offs+= 0x100 << (machine().input().code_pressed(JOYCODE_BUTTON2) ? 8 : 0);
+
+	if(machine().input().code_pressed(JOYCODE_HAT1UP))
+		m_start_offs-= 0x100 << (machine().input().code_pressed(JOYCODE_BUTTON2) ? 8 : 0);
+
+	m_start_offs %= vga.svga_intf.vram_size;
+
+	if(machine().input().code_pressed_once(JOYCODE_BUTTON1))
+		m_test_trigger ^= 1;
+
+	if (!m_test_trigger)
+		return 0;
+
+	popmessage("%d %d %04x", m_test_x, m_test_y, m_start_offs);
+
+	bitmap.fill(0, cliprect);
+
+	int count = m_start_offs;
+
+	for(int y = 0; y < m_test_y; y++)
+	{
+		for(int x = 0; x < m_test_x; x ++)
+		{
+			u8 color = vga.memory[count % vga.svga_intf.vram_size];
+
+			if(cliprect.contains(x, y))
+			{
+				//bitmap.pix(y, x) = pal565(color, 11, 5, 0);
+				bitmap.pix(y, x) = pen(color);
+			}
+
+			count ++;
+			// count += 2;
+		}
+	}
+#endif
+
+
+	return 0;
+}
+
 
 /*
  * SiS630 overrides
  */
+
+ sis630_vga_device::sis630_vga_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: sis6326_vga_device(mconfig, SIS630_VGA, tag, owner, clock)
+{
+	m_crtc_space_config = address_space_config("crtc_regs", ENDIANNESS_LITTLE, 8, 8, 0, address_map_constructor(FUNC(sis630_vga_device::crtc_map), this));
+	m_seq_space_config = address_space_config("sequencer_regs", ENDIANNESS_LITTLE, 8, 8, 0, address_map_constructor(FUNC(sis630_vga_device::sequencer_map), this));
+	m_tvout_space_config = address_space_config("tvout_regs", ENDIANNESS_LITTLE, 8, 8, 0, address_map_constructor(FUNC(sis630_vga_device::tvout_map), this));
+}
 
 // Page 144
 void sis630_vga_device::crtc_map(address_map &map)
@@ -602,6 +999,7 @@ void sis630_vga_device::sequencer_map(address_map &map)
 			vga.crtc.start_addr_latch |= data << 16;
 		})
 	);
+	map(0x0e, 0x0e).unmapr();
 	map(0x0e, 0x0e).lw8(
 		NAME([this] (offs_t offset, u8 data) {
 			LOG("SR0E: Extended pitch register %02x\n", data);
@@ -629,6 +1027,7 @@ void sis630_vga_device::sequencer_map(address_map &map)
 		})
 	);
 	//map(0x1d, 0x1d) Segment Selection Overflow
+	map(0x15, 0x1d).unmaprw();
 	map(0x1e, 0x1e).lw8(
 		NAME([this] (offs_t offset, u8 data) {
 			if (BIT(data, 6))
@@ -643,6 +1042,7 @@ void sis630_vga_device::sequencer_map(address_map &map)
 				popmessage("pc_vga_sis: SR20 %s %s", BIT(data, 7) ? "PCI address enabled" : "", BIT(data, 0) ? "memory map I/O enable" : "");
 		})
 	);
+	map(0x21, 0x21).unmaprw();
 	//map(0x21, 0x21) GUI HostBus state machine setting
 	//map(0x22, 0x22) GUI HostBus controller timing
 	//map(0x23, 0x23) GUI HostBus timer
