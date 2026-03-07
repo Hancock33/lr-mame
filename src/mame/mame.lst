@@ -457,12 +457,16 @@ vp60
 fashiong
 fashiong2
 fstation
+fstation7
+fstation8
 funlddlx
 funlddlx2
 funlddlx4
 quickjac
+sbsoli
 skattv
 skattva
+trumpfas
 
 @source:adp/manohman.cpp
 backgamn
@@ -479,34 +483,74 @@ disc
 disc2000
 disc2001
 disc3000
+disciip
+discoly
+discryl
+discrylb
 dpplpot
 dpplstrt
 elitdisc
 excellnt
 extrbltt
+fullhous
 glksstrn
+herzas
+herzasf1
+herzasf8
 juwel
 karoas
 kniffi
+m21point
 macao
+mas
+mastro
+mbistro
+mclub
+mmax
+mtrio
 rasant
+sesam
+sherzas
+sjackpot
+sprmlti
 sprmltib
+superpro
+v4assef1
+v4assef2
+vmulti
 
 @source:adp/stellafr.cpp
 action
 allfred
 bigjkpot
+bigwinnr
+disc4000
+discfun
+dpplson
 dscbonus
 dscjkpot
+gjubil
 grandhnd
+grnada
+jack4000
 jkrpoker
 jmbojmbo
 jmbojmbf
+jumbo400
+jumboa
 kleoptra
+kometf1
+mdouble
+moneyf1
 multmult
+multprim
+multstar
+mystjack
+nunran
 st_ohla
 st_vulkn
 sunny
+suprdisc
 taipan
 turbosun
 
@@ -15196,10 +15240,11 @@ sc6dndema
 sc6dndemb
 sc6dndemc
 
-@source:bfm/bfm_swp.cpp
+@source:bfm/bfm_cobra3.cpp
 c3_ppays
 c3_rtime
 c3_telly
+c3_tellyns
 c3_totp
 
 @source:bfm/bfmsys83.cpp
@@ -15785,6 +15830,7 @@ dimahoou
 dimahoud
 dstlk
 dstlka
+dstlkb
 dstlkh
 dstlku
 dstlku1d
@@ -17261,6 +17307,9 @@ decomult
 @source:dataeast/deshoros.cpp
 destiny
 
+@source:dataeast/dfruit2.cpp
+dfruit2
+
 @source:dataeast/dietgo.cpp
 dietgo
 dietgoe
@@ -17663,6 +17712,10 @@ aviion_4600
 
 @source:dgrm/blackt96.cpp
 blackt96
+
+@source:dgrm/onetwo.cpp
+onetwo
+onetwoe
 
 @source:dgrm/pokechmp.cpp
 billlist
@@ -18859,6 +18912,7 @@ glass10a
 glass10b
 glass10c
 glass10d
+glass10e
 glassa
 glassat
 glasskr
@@ -18880,10 +18934,13 @@ goldartpuk
 goldartuk
 
 @source:gaelco/lotoplay.cpp
-lotoplay
-lotoplaya
-lotoplayb
-lotoplayp
+lotoply
+lotoplya
+lotoplyb
+lotoplyp
+lotoplyz
+lotoplyza
+lotoplyzb
 
 @source:gaelco/mastboy.cpp
 mastboy
@@ -32694,10 +32751,6 @@ komocomo
 maddonnab
 oneshot
 
-@source:misc/onetwo.cpp
-onetwo
-onetwoe
-
 @source:misc/opercoin.cpp
 multibaby
 spirulo
@@ -34948,6 +35001,9 @@ tg16
 @source:nec/pcfx.cpp
 pcfx
 pcfxga
+
+@source:nec/piet1.cpp
+piet1
 
 @source:nec/tk80bs.cpp
 tk80bs
@@ -43595,6 +43651,9 @@ zx97
 
 @source:sinclair/specnext.cpp
 tbblue
+specnext_ks1
+specnext_ks2
+specnext_ks3
 
 @source:sinclair/z88.cpp
 z88
@@ -46616,6 +46675,7 @@ pbaction2
 pbaction3
 pbaction4
 pbactiont
+pbactiont2
 
 @source:tecmo/senjyo.cpp
 baluba
@@ -46952,6 +47012,9 @@ ti990_10
 @source:ti/ti990_4.cpp
 ti990_4
 ti990_4v
+
+@source:ti/tipc.cpp
+tipc
 
 @source:ti/tm990189.cpp
 990189
