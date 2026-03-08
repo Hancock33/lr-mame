@@ -1107,7 +1107,7 @@ void nscsi_cdrom_device::scsi_command()
 		break;
 	}
 #ifdef __LIBRETRO__
-	CDD_status = (scsi_cmdbuf[4]) ? 0x3100 : 0;
+	CDD_status = (m_scsi_cmdbuf[4]) ? 0x3100 : 0;
 #endif
 }
 
