@@ -170,7 +170,7 @@ void retro_window_info::resize(int32_t width, int32_t height)
 	{
 	    fb_width      = width;
 	    fb_height     = height;
-	    video_changed = 2;
+	    video_changed = VIDEO_CHANGED_GEOMETRY;
 	    renderer().notify_changed();
     }
 }
@@ -282,10 +282,9 @@ int retro_window_info::window_init()
 
 		int temp_width, temp_height;
 		target()->compute_minimum_size(temp_width, temp_height);
-		fb_width  = temp_width;
-		fb_height = temp_height;
-
-		video_changed = 2;
+		fb_width      = temp_width;
+		fb_height     = temp_height;
+		video_changed = VIDEO_CHANGED_GEOMETRY;
 	}
 
 	// reset sound timer (set in `sound_manager::update` to `retro_fps`)
@@ -377,7 +376,7 @@ void retro_window_info::update()
 			eff_aspect = 1.0f / eff_aspect;
 
 		target()->compute_minimum_size(temp_width, temp_height);
-		target()->set_keepaspect(false);
+		target()->set_keepaspect(true);
 
 		if (alternate_renderer)
 		{
@@ -410,7 +409,7 @@ void retro_window_info::update()
 			}
 
 			monitor()->refresh();
-			video_changed = 2;
+			video_changed = VIDEO_CHANGED_GEOMETRY;
 
 			if (video_changed)
 			{
@@ -424,12 +423,12 @@ void retro_window_info::update()
 				{
 					max_width     = fb_width;
 					max_height    = fb_height;
-					video_changed = 1;
+					video_changed = VIDEO_CHANGED_AV_INFO;
 				}
 
 				/* No reason to call av_info when not yet running */
 				if (!retro_load_ok)
-					video_changed = 0;
+					video_changed = VIDEO_CHANGED_NONE;
 			}
 
 			if (!this->m_fullscreen)
@@ -511,7 +510,7 @@ void retro_window_info::update()
 						&& screen_refresh >= 40.0f)
 				{
 					retro_fps     = screen_refresh;
-					video_changed = 1;
+					video_changed = VIDEO_CHANGED_AV_INFO;
 				}
 			}
 
