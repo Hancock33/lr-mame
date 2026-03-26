@@ -505,6 +505,10 @@ inline save_error save_manager::do_read(T check_length, U read_block, V start_he
 
 u32 save_manager::signature() const
 {
+#ifdef __LIBRETRO__
+	// Ignored for older version state compatibility
+	return 0;
+#endif
 	// iterate over entries
 	util::crc32_creator crc;
 	for (auto &entry : m_entry_list)

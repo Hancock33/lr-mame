@@ -963,7 +963,6 @@ void retro_unload_game(void)
       retro_pause = -1;
 }
 
-/* Stubs */
 size_t retro_serialize_size(void)
 {
    if (     mame_machine_manager::instance() != NULL
@@ -975,21 +974,27 @@ size_t retro_serialize_size(void)
 }
 bool retro_serialize(void *data, size_t size)
 {
+   save_error error = STATERR_NOT_FOUND;
    if (     mame_machine_manager::instance() != NULL
 	      && mame_machine_manager::instance()->machine() != NULL
 	      && ram_state::get_size(mame_machine_manager::instance()->machine()->save()) > 0)
-      return (mame_machine_manager::instance()->machine()->save().write_buffer((u8*)data, size) == STATERR_NONE);
+      error = mame_machine_manager::instance()->machine()->save().write_buffer((u8*)data, size);
 
-   return false;
+   if (error != STATERR_NONE)
+      log_cb(RETRO_LOG_ERROR, "State save error %d.\n", error);
+   return (error == STATERR_NONE);
 }
 bool retro_unserialize(const void *data, size_t size)
 {
+   save_error error = STATERR_NOT_FOUND;
    if (     mame_machine_manager::instance() != NULL
          && mame_machine_manager::instance()->machine() != NULL
          &&	ram_state::get_size(mame_machine_manager::instance()->machine()->save()) > 0)
-      return (mame_machine_manager::instance()->machine()->save().read_buffer((u8*)data, size) == STATERR_NONE);
+      error = mame_machine_manager::instance()->machine()->save().read_buffer((u8*)data, size);
 
-   return false;
+   if (error != STATERR_NONE)
+      log_cb(RETRO_LOG_ERROR, "State load error %d.\n", error);
+   return (error == STATERR_NONE);
 }
 
 unsigned retro_get_region (void) { return RETRO_REGION_NTSC; }
