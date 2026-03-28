@@ -70,6 +70,13 @@ enum
    ROTATION_MODE_TATE_ROR
 };
 
+enum
+{
+   VIDEO_CHANGED_NONE,
+   VIDEO_CHANGED_AV_INFO,
+   VIDEO_CHANGED_GEOMETRY
+};
+
 extern bool retro_load_ok;
 extern int video_changed;
 extern int retro_pause;
