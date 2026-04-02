@@ -376,7 +376,7 @@ void retro_window_info::update()
 			eff_aspect = 1.0f / eff_aspect;
 
 		target()->compute_minimum_size(temp_width, temp_height);
-		target()->set_keepaspect(true);
+		target()->set_keepaspect(false);
 
 		if (alternate_renderer)
 		{

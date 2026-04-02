@@ -51,7 +51,6 @@ int  lightgun_mode = RETRO_SETTING_LIGHTGUN_MODE_DISABLED;
 int  lightgun_offscreen_mode = RETRO_SETTING_LIGHTGUN_OFFSCREEN_MODE_FREE;
 bool mouse_enable = false;
 bool cheats_enable = false;
-bool alternate_renderer = false;
 bool boot_to_osd_enable = false;
 bool boot_to_bios_enable = false;
 bool softlist_enable = false;
@@ -69,6 +68,7 @@ char mame_4way_map[256];
 char joystick_deadzone[8];
 char joystick_saturation[8];
 char joystick_threshold[8];
+char alternate_renderer = 0;
 
 // emu flags
 static bool arcade = false;
