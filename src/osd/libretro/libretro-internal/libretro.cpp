@@ -460,12 +460,14 @@ static void check_variables(void)
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      bool alternate_renderer_prev = alternate_renderer;
+      char alternate_renderer_prev = alternate_renderer;
 
       if (!strcmp(var.value, "disabled"))
-         alternate_renderer = false;
+         alternate_renderer = 0;
       if (!strcmp(var.value, "enabled"))
-         alternate_renderer = true;
+         alternate_renderer = 1;
+      if (!strcmp(var.value, "cropped"))
+         alternate_renderer = 2;
 
       if (alternate_renderer != alternate_renderer_prev)
          video_changed = VIDEO_CHANGED_GEOMETRY;
@@ -492,13 +494,20 @@ static void check_variables(void)
          if (pch)
             height = strtoul(pch, NULL, 0);
 
-         if (width != fb_width || height != fb_height)
+         if ((width != fb_width || height != fb_height) || video_changed)
          {
             fb_width      = width;
             fb_height     = height;
             video_changed = VIDEO_CHANGED_GEOMETRY;
+
             /* Respect source aspect ratio */
-            fb_width      = fb_height * retro_aspect;
+            if (alternate_renderer == 2)
+            {
+               if (width > height)
+                  fb_width   = fb_height * retro_aspect;
+               else
+                  fb_height  = fb_width / retro_aspect;
+            }
 
             /* Must use SET_SYSTEM_AV_INFO when max is not enough */
             if (fb_width > max_width || fb_height > max_height)
