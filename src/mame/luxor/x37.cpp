@@ -42,6 +42,9 @@
 
 namespace {
 
+//#define VERBOSE 0
+#include "logmacro.h"
+
 #define MC68010_TAG  "14m"
 #define NS32081_TAG  "06o"
 #define MC68450_TAG  "11m"
@@ -187,14 +190,15 @@ offs_t x37_state::get_ma(offs_t offset, bool &at0, bool &at1)
 	at0 = BIT(pgd, 14);
 	at1 = BIT(pgd, 15);
 
-	offs_t ma = ((pgd & 0xfff) << 11) | ((offset << 1) & 0x7ff);
+	offs_t const logical = offset << 1;
+	offs_t ma = ((pgd & 0xfff) << 11) | (logical & 0x7ff);
 
 	// TPT
 	int const fc = m_cpu->get_fc();
 	if (BIT(fc, 2) && ((m_cb & 0xc0) == 0xc0)) {
-		if (!(offset & 0x600000) || ((offset & 0x600080) == 0x600000)) {
-			ma = ((offset << 1) & 0x380000) | (ma & 0x47ffff);
-			at1 = BIT(offset, 22);
+		if (!(logical & 0xc00000) || ((logical & 0xc00100) == 0xc00000)) {
+			ma = (logical & 0x380000) | (ma & 0x47ffff);
+			at1 = BIT(logical, 22);
 		}
 	}
 	return ma;
@@ -215,13 +219,11 @@ uint16_t x37_state::ram_r(offs_t offset, uint16_t mem_mask)
 		offs_t const ma = get_ma(offset, at0, at1);
 
 		if (ma < 0x400000) {
-			//logerror("r offs %06x ma %06x\n", offset, ma);
 			if (ACCESSING_BITS_0_7)
 				data |= m_ram[ma & ~1];
 			if (ACCESSING_BITS_8_15)
 				data |= m_ram[ma | 1] << 8;
 		} else {
-			logerror("r offs %06x ma2 %06x\n", offset, ma);
 			data = m_cpu->space(AS_PROGRAM).read_word(ma);
 		}
 	}
@@ -235,13 +237,11 @@ void x37_state::ram_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 	offs_t const ma = get_ma(offset, at0, at1);
 
 	if (ma < 0x400000) {
-		//logerror("w offs %06x ma %06x\n", offset, ma);
 		if (ACCESSING_BITS_0_7)
 			m_ram[ma & ~1] = data;
 		if (ACCESSING_BITS_8_15)
 			m_ram[ma | 1] = data >> 8;
 	} else {
-		logerror("w offs %06x ma2 %06x\n", offset, ma);
 		m_cpu->space(AS_PROGRAM).write_word(ma, data, mem_mask);
 	}
 }
@@ -280,12 +280,12 @@ void x37_state::mapper_w(offs_t offset, uint16_t data)
 		offs_t const pga = ((offset & 0x3c00) >> 2) | (segd & 0x7f);
 		m_page_ram[pga] = data;
 
-		logerror("%s: %06x PAGE RAM %03x:%04x (SEG %03x:%04x)\n", machine().describe_context(), offset, pga, data, sega, (BIT(segd, 7) << 15) | (segd & 0x7f));
+		LOG("%s: %06x PAGE RAM %03x:%04x (SEG %03x:%04x)\n", machine().describe_context(), offset, pga, data, sega, (BIT(segd, 7) << 15) | (segd & 0x7f));
 	} else {
 		u8 const segd = (BIT(data, 15) << 7) | (data & 0x7f);
 		m_segment_ram[sega] = segd;
 
-		logerror("%s: %06x SEGMENT RAM %03x:%04x\n", machine().describe_context(), offset, sega, segd);
+		LOG("%s: %06x SEGMENT RAM %03x:%04x\n", machine().describe_context(), offset, sega, segd);
 	}
 }
 
@@ -341,7 +341,7 @@ uint8_t x37_state::cio_pa_r()
 
 	u8 data = 0x7e;
 
-	data |= m_mint << 0;
+	data |= m_mint;
 	data |= m_sasi_int << 7;
 
 	return data;
@@ -440,8 +440,6 @@ void x37_state::xdck_w(offs_t offset, uint16_t data)
 
 	*/
 
-	logerror("XDCK %04x\n", data);
-
 	m_fdc->mr_w(BIT(data, 0));
 	m_fdc->dden_w(BIT(data, 1));
 	m_fdc->hlt_w(BIT(data, 2));
@@ -518,6 +516,7 @@ void x37_state::x37(machine_config &config)
 	m_scc[0]->out_int_callback().set("irq4", FUNC(input_merger_device::in_w<0>));
 	m_scc[0]->out_wreqa_callback().set("req3", FUNC(input_merger_device::in_w<0>));
 	m_scc[0]->out_wreqb_callback().set("req3", FUNC(input_merger_device::in_w<1>));
+	m_scc[0]->out_txdb_callback().set("kb", FUNC(abc_keyboard_port_device::txd_w));
 	m_scc[0]->out_txda_callback().set("tty01", FUNC(rs232_port_device::write_txd));
 	m_scc[0]->out_dtra_callback().set("tty01", FUNC(rs232_port_device::write_dtr));
 	m_scc[0]->out_rtsa_callback().set("tty01", FUNC(rs232_port_device::write_rts));
@@ -601,7 +600,11 @@ ROM_START( x37 )
 	ROM_REGION( 0x8000, MC68010_TAG, 0 )
 	ROM_LOAD( "x37.07o", 0x0000, 0x8000, CRC(d505e7e7) SHA1(a3ad839e47b1f71c394e5ce28bce199e5e4810d2) )
 
+	//ROM_REGION( 0x20, NMC9306_TAG, 0 )
+	//ROM_LOAD( "nmc9306.05k", 0x00, 0x20, CRC(233e90a6) SHA1(f7e35dc0f2be88a191a9c1ce037e35b91a7cf1c4) )
+
 	ROM_REGION( 0xa28, "plds", 0 )
+	//ROM_LOAD( "pat8000", 0x000, 0x104, NO_DUMP ) // Strobe decoder for X35 video adapter
 	ROM_LOAD( "pat8003.12l", 0x000, 0x104, CRC(7c7b6dd1) SHA1(ab98fe70d589273b6a0437a818d9ae4bf9319ad5) ) // SCC decoder and clock multiplexor control
 	ROM_LOAD( "pat8031.05h", 0x104, 0x104, CRC(2836e65b) SHA1(305feb8dff7d6762f2ab50d25316ad43140456eb) ) // DS60 MAPPER CONTROL
 	ROM_LOAD( "pat8032.07h", 0x208, 0x104, CRC(356118d2) SHA1(e8e1dc6accdb8f0de481b91aa844f4b95f967826) ) // DS60 MAIN FUNCTION ENCODER
