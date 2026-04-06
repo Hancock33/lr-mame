@@ -164,7 +164,7 @@ static void upload_output_audio_buffer()
 {
    if (!audio_ready)
    {
-      unsigned samples = (sample_rate / retro_fps);
+      unsigned samples = ceil((double)sample_rate / retro_fps);
       memset(output_audio_buffer.data + output_audio_buffer.size, 0, samples * sizeof(*output_audio_buffer.data));
       output_audio_buffer.size += samples;
    }
