@@ -2684,11 +2684,11 @@ u64 sound_manager::rate_and_time_to_index(attotime time, u32 sample_rate) const
 void sound_manager::update(s32)
 {
 #ifdef __LIBRETRO__
-	/* Adjust sound timer to 5 times per frame */
+	/* Adjust sound timer for minimal latency */
 	if (sound_timer != retro_fps)
 	{
 		sound_timer = retro_fps;
-		m_update_timer->adjust(attotime::from_hz(sound_timer * 5), 0, attotime::from_hz(sound_timer * 5));
+		m_update_timer->adjust(attotime::from_hz(sound_timer * retro_fps), 0, attotime::from_hz(sound_timer * retro_fps));
 	}
 #endif
 
