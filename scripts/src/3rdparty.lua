@@ -101,6 +101,12 @@ if _OPTIONS["gcc"]~=nil then
 		}
 	end
 end
+if _OPTIONS["targetos"]=="windows" then
+		buildoptions_c {
+			"-Wno-error=format", -- GCC with UCRT produces warnings for the non-standard I64 size modifier
+			"-Wno-error=format-extra-args",
+		}
+end
 
 	configuration { }
 
@@ -1052,11 +1058,6 @@ elseif _OPTIONS["vs"]=="intel-15" then
 end
 
 	configuration { }
-		defines {
-			"LUA_COMPAT_ALL",
-			"LUA_COMPAT_5_1",
-			"LUA_COMPAT_5_2",
-		}
 	if (_OPTIONS["targetos"] ~= "windows") and (_OPTIONS["targetos"] ~= "asmjs") then
 		defines {
 			"LUA_USE_POSIX",
@@ -1146,9 +1147,6 @@ elseif _OPTIONS["vs"]=="clangcl" then
 end
 
 	configuration { }
-		defines {
-			"LUA_COMPAT_ALL",
-		}
 
 	includedirs {
 		MAME_DIR .. "3rdparty",
