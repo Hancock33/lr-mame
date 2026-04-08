@@ -1459,6 +1459,8 @@ void running_machine::retro_loop()
 			handle_saveload();
 	}
 
+	running_machine::sound().retro_update_audio();
+
 	if ((m_hard_reset_pending || m_exit_pending) && m_saveload_schedule == saveload_schedule::NONE)
 	{
 		retro_machine_exit();

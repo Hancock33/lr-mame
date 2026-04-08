@@ -287,9 +287,6 @@ int retro_window_info::window_init()
 		video_changed = VIDEO_CHANGED_GEOMETRY;
 	}
 
-	// reset sound timer (set in `sound_manager::update` to `retro_fps`)
-	sound_timer = 0;
-
 	// reset screen configuration
 	screen_configured = 0;
 
