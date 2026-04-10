@@ -7,10 +7,10 @@
 #include "cpu/m6805/m68705.h"
 #include "cpu/z80/z80.h"
 #include "cpu/mcs51/i8051.h"
-
+#include "machine/gen_latch.h"
+#include "machine/timer.h"
 #include "sound/msm5205.h"
 #include "sound/ymopn.h"
-
 #include "video/bufsprite.h"
 
 #include "emupal.h"
@@ -24,8 +24,8 @@ public:
 		: driver_device(mconfig, type, tag)
 		, m_maincpu(*this, "maincpu")
 		, m_audiocpu(*this, "audiocpu")
+		, m_soundlatch(*this, "soundlatch")
 		, m_palette(*this, "palette")
-		, m_has_coinlock(true)
 		, m_spriteram(*this, "spriteram")
 		, m_videoram(*this, "videoram")
 		, m_bgmap(*this, "bgmap")
@@ -43,18 +43,21 @@ public:
 protected:
 	required_device<cpu_device> m_maincpu;
 	required_device<cpu_device> m_audiocpu;
+	required_device<generic_latch_8_device> m_soundlatch;
 	required_device<palette_device> m_palette;
+	required_device<buffered_spriteram16_device> m_spriteram;
 
+	TIMER_DEVICE_CALLBACK_MEMBER(scanline);
 	void soundcmd_w(offs_t offset, u16 data, u16 mem_mask = ~0);
 	void videoram_w(offs_t offset, u16 data, u16 mem_mask = ~0);
-	void videoctrl_w(u8 data);
+	virtual void videoctrl_w(u8 data);
 	void scroll_w(offs_t offset, u16 data, u16 mem_mask = ~0);
 
 	void main_map(address_map &map) ATTR_COLD;
-	bool m_has_coinlock;
+	void sound_map(address_map &map) ATTR_COLD;
+	void sound_port_map(address_map &map) ATTR_COLD;
 
 private:
-	required_device<buffered_spriteram16_device> m_spriteram;
 	required_shared_ptr<u16> m_videoram;
 	required_region_ptr<u16> m_bgmap;
 	optional_device<msm5205_device> m_msm;
@@ -69,8 +72,6 @@ private:
 	void comad_sound_map(address_map &map) ATTR_COLD;
 	void sample_map(address_map &map) ATTR_COLD;
 	void sample_port_map(address_map &map) ATTR_COLD;
-	void sound_map(address_map &map) ATTR_COLD;
-	void sound_port_map(address_map &map) ATTR_COLD;
 
 	void msm5205_w(u8 data);
 	TILE_GET_INFO_MEMBER(get_bg_tile_info);
@@ -80,49 +81,6 @@ private:
 	u32 screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 };
 
-
-class pushman_state : public tigeroad_state
-{
-public:
-	pushman_state(const machine_config &mconfig, device_type type, const char *tag)
-		: tigeroad_state(mconfig, type, tag)
-		, m_mcu(*this, "mcu")
-		, m_host_semaphore(false)
-		, m_mcu_semaphore(false)
-		, m_host_latch(0xffff)
-		, m_mcu_latch(0xffff)
-		, m_mcu_output(0xffff)
-		, m_mcu_latch_ctl(0xff)
-	{
-		m_has_coinlock = false;
-	}
-
-	void pushman(machine_config &config);
-	void bballs(machine_config &config);
-
-protected:
-	virtual void machine_start() override ATTR_COLD;
-
-private:
-	u16 mcu_comm_r(offs_t offset, u16 mem_mask = ~0);
-	void pushman_mcu_comm_w(offs_t offset, u16 data);
-	void bballs_mcu_comm_w(u16 data);
-
-	void mcu_pa_w(u8 data);
-	void mcu_pb_w(u8 data);
-	void mcu_pc_w(u8 data);
-
-	void bballs_map(address_map &map) ATTR_COLD;
-	void pushman_map(address_map &map) ATTR_COLD;
-
-	required_device<m68705u_device> m_mcu;
-
-	bool    m_host_semaphore, m_mcu_semaphore;
-	u16     m_host_latch, m_mcu_latch;
-	u16     m_mcu_output;
-	u8      m_mcu_latch_ctl;
-};
-
 class f1dream_state : public tigeroad_state
 {
 public:
@@ -130,6 +88,7 @@ public:
 		: tigeroad_state(mconfig, type, tag)
 		, m_mcu(*this, "mcu")
 		, m_mcu_p3(0xff)
+		, m_soundlatch_data(0xff)
 	{
 	}
 
@@ -151,4 +110,48 @@ private:
 
 	required_device<i8751_device> m_mcu;
 	u8 m_mcu_p3;
+	u8 m_soundlatch_data;
+};
+
+class pushman_state : public tigeroad_state
+{
+public:
+	pushman_state(const machine_config &mconfig, device_type type, const char *tag)
+		: tigeroad_state(mconfig, type, tag)
+		, m_mcu(*this, "mcu")
+		, m_host_semaphore(false)
+		, m_mcu_semaphore(false)
+		, m_host_latch(0xffff)
+		, m_mcu_latch(0xffff)
+		, m_mcu_output(0xffff)
+		, m_mcu_latch_ctl(0xff)
+	{ }
+
+	void pushman(machine_config &config);
+	void bballs(machine_config &config);
+
+protected:
+	virtual void machine_start() override ATTR_COLD;
+
+	// mask out coin lockouts
+	virtual void videoctrl_w(u8 data) override { tigeroad_state::videoctrl_w(data | 0x30); }
+
+private:
+	u16 mcu_comm_r(offs_t offset, u16 mem_mask = ~0);
+	void pushman_mcu_comm_w(offs_t offset, u16 data);
+	void bballs_mcu_comm_w(u16 data);
+
+	void mcu_pa_w(u8 data);
+	void mcu_pb_w(u8 data);
+	void mcu_pc_w(u8 data);
+
+	void bballs_map(address_map &map) ATTR_COLD;
+	void pushman_map(address_map &map) ATTR_COLD;
+
+	required_device<m68705u_device> m_mcu;
+
+	bool    m_host_semaphore, m_mcu_semaphore;
+	u16     m_host_latch, m_mcu_latch;
+	u16     m_mcu_output;
+	u8      m_mcu_latch_ctl;
 };
