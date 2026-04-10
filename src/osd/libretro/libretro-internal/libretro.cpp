@@ -44,7 +44,6 @@ float retro_aspect = (float)4.0f / (float)3.0f;
 float view_aspect  = 1.0f;
 float sample_rate  = 48000.0f;
 float retro_fps    = 60.0f;
-float sound_timer  = 50.0f; /* default STREAMS_UPDATE_ATTOTIME, changed later to `retro_fps` */
 int video_changed  = VIDEO_CHANGED_NONE;
 int screen_configured = 0;
 
@@ -135,9 +134,8 @@ static struct {
 
 static void ensure_output_audio_buffer_capacity(int32_t capacity)
 {
-   if (capacity <= output_audio_buffer.capacity) {
+   if (capacity <= output_audio_buffer.capacity)
       return;
-   }
 
    output_audio_buffer.data = (int16_t*)realloc(output_audio_buffer.data, capacity * sizeof(*output_audio_buffer.data));
    output_audio_buffer.capacity = capacity;
@@ -164,7 +162,7 @@ static void upload_output_audio_buffer()
 {
    if (!audio_ready)
    {
-      unsigned samples = ceil((double)sample_rate / retro_fps);
+      unsigned samples = (sample_rate / retro_fps) * sizeof(*output_audio_buffer.data);
       memset(output_audio_buffer.data + output_audio_buffer.size, 0, samples * sizeof(*output_audio_buffer.data));
       output_audio_buffer.size += samples;
    }
