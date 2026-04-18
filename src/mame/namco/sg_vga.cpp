@@ -1,7 +1,15 @@
 // license:BSD-3-Clause
 // copyright-holders:
+/**************************************************************************************************
 
-/***********************************************************************************
+TODO:
+- Has background GFX cutoffs (gameplay and service mode);
+- LED N/G;
+- complete I/O;
+- hopper (eventually goes payout error);
+- Allegedly should have language select somewhere (Chinese, Korean, English, Japanese);
+
+===================================================================================================
 
 Namco SH2-based Medal Series, Namco 2000-2001
 Hardware info by Guru
@@ -119,9 +127,7 @@ Notes:
    DX-102 - NEC DX-102 custom chip (unknown usage)
    DX-101 - NEC DX-101 custom chip used for graphics generation
 
-TODO:
-- everything, driver-wise
-***********************************************************************************/
+**************************************************************************************************/
 
 
 #include "emu.h"
@@ -141,27 +147,61 @@ namespace {
 class sg_vga_state : public driver_device
 {
 public:
-	sg_vga_state(const machine_config &mconfig, device_type type, const char *tag) :
-		driver_device(mconfig, type, tag),
-		m_maincpu(*this, "maincpu"),
-		m_video(*this, "video"),
-		m_in(*this, "IN%u", 0U)
+	sg_vga_state(const machine_config &mconfig, device_type type, const char *tag)
+		: driver_device(mconfig, type, tag)
+		, m_maincpu(*this, "maincpu")
+		, m_video(*this, "video")
+		, m_in(*this, "IN%u", 0U)
+		, m_medal(*this, "MEDAL%u", 0U)
+		, m_x1rom(*this, "x1rom")
+		, m_x1_bank(*this, "x1_bank%u", 0U)
 	{ }
 
 	void sg_vga(machine_config &config) ATTR_COLD;
+
+protected:
+	virtual void machine_start() override ATTR_COLD;
+	virtual void machine_reset() override ATTR_COLD;
 
 private:
 	required_device<sh7043a_device> m_maincpu;
 	required_device<x1_020_dx_101_device> m_video;
 	required_ioport_array<6> m_in;
+	required_ioport_array<8> m_medal;
+	required_memory_region m_x1rom;
+	required_memory_bank_array<8> m_x1_bank;
 
 	void program_map(address_map &map) ATTR_COLD;
+	void x1_map(address_map &map) ATTR_COLD;
+
+	void pd_w(u32 data);
+	u16 pe_r();
+	void pe_w(u16 data);
+	u16 pf_r();
+
+	u8 m_medal_select;
 };
 
+void sg_vga_state::machine_start()
+{
+	u8 *ROM = m_x1rom->base();
+	for (int i = 0; i < 8; i++)
+	{
+		m_x1_bank[i]->configure_entries(0, 0x20, &ROM[0x00000], 0x20000);
+	}
+
+	save_item(NAME(m_medal_select));
+}
+
+void sg_vga_state::machine_reset()
+{
+	m_medal_select = 0;
+}
 
 void sg_vga_state::program_map(address_map &map)
 {
 	map(0x000000, 0x03ffff).rom();
+//	map(0x120010, 0x120017) continously read on sound number #05 (?)
 	map(0x200000, 0x27ffff).rom().region("external_prg", 0);
 	// initializes in $42xxxx, reads in $43xxxx in "backup ram test"
 	map(0x420000, 0x427fff).mirror(0x8000).ram().share("nvram");
@@ -169,21 +209,62 @@ void sg_vga_state::program_map(address_map &map)
 	map(0x440000, 0x440003).lr32(
 		NAME([this] () { return 0xff00ff00 | (m_in[1]->read() << 16) | m_in[0]->read(); })
 	);
-	// RMW, unknown purpose
-//	map(0x440004, 0x440007).lr32(NAME([] () { return 0xffff'ffff; }));
+	map(0x440004, 0x440007).noprw(); // RMW, unknown purpose, noisy
 	map(0x460000, 0x460003).lr32(
 		NAME([this] () { return 0xff00ff00 | (m_in[3]->read() << 16) | m_in[2]->read(); })
 	);
 	map(0x460004, 0x460007).lr32(
 		NAME([this] () { return 0xff00ff00 | (m_in[5]->read() << 16) | m_in[4]->read(); })
 	);
+	map(0x460000, 0x46000f).lw16(NAME([this] (offs_t offset, u16 data, u16 mem_mask) {
+		if (data & 0xffe0)
+			logerror("$%06x: warning write %04x & %04x\n", offset * 2 + 0x460000, data, mem_mask);
+		if (ACCESSING_BITS_0_7)
+		{
+			m_x1_bank[offset]->set_entry(data & 0x1f);
+		}
+	}));
 	map(0x4e0000, 0x4effff).ram();
 	map(0x500000, 0x503fff).rw("x1snd", FUNC(x1_010_device::word_r), FUNC(x1_010_device::word_w));
-	map(0x800000, 0x83ffff).rw(m_video, FUNC(x1_020_dx_101_device::spriteram_r), FUNC(x1_020_dx_101_device::spriteram_w)); // ?
-	map(0x840000, 0x84ffff).ram().w("palette", FUNC(palette_device::write32)).share("palette"); // ?
-	map(0x860000, 0x86003f).rw(m_video, FUNC(x1_020_dx_101_device::vregs_r), FUNC(x1_020_dx_101_device::vregs_w)); // ?
+	map(0x800000, 0x83ffff).rw(m_video, FUNC(x1_020_dx_101_device::spriteram_r), FUNC(x1_020_dx_101_device::spriteram_w));
+	map(0x840000, 0x84ffff).ram().w("palette", FUNC(palette_device::write32)).share("palette");
+	map(0x860000, 0x86003f).rw(m_video, FUNC(x1_020_dx_101_device::vregs_r), FUNC(x1_020_dx_101_device::vregs_w));
 }
 
+void sg_vga_state::x1_map(address_map &map)
+{
+	for (int i = 0; i < 8; i++)
+	{
+		const u32 base_address = i * 0x20000;
+		map(base_address, base_address | 0x1ffff).bankr(m_x1_bank[i]);
+	}
+}
+
+
+// bit 30: always active
+// bits 20-17: medal input select
+// everything else: unused?
+void sg_vga_state::pd_w(u32 data)
+{
+//	if (!BIT(data, 30) || data & 0xbff1'ffff)
+//		printf("%08x\n", data);
+	m_medal_select = (data & 0x000e'0000) >> 17;
+}
+
+// TODO: suppress logging for now
+u16 sg_vga_state::pe_r()
+{
+	return 0;
+}
+
+void sg_vga_state::pe_w(u16 data)
+{
+}
+
+u16 sg_vga_state::pf_r()
+{
+	return m_medal[m_medal_select]->read();
+}
 
 static INPUT_PORTS_START( hplanet )
 	PORT_START("IN0")
@@ -213,10 +294,10 @@ static INPUT_PORTS_START( hplanet )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 
 	PORT_START("IN1")
-	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_GAMBLE_BOOK ) // analyzer, needs being held
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_GAMBLE_BOOK ) PORT_TOGGLE // analyzer dip on cab coin box, needs being held
 	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_BUTTON1 ) PORT_NAME("White Button (Choose)")
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_NAME("Red Button (Enter)")
-	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_BUTTON3 ) PORT_NAME("Gun") // TODO: intelligible
+	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_BUTTON3 ) PORT_NAME("Gun")
 	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_OTHER ) // hopper
 	PORT_DIPNAME( 0x20, 0x20, "IN1" )
 	PORT_DIPSETTING(    0x20, DEF_STR( Off ) )
@@ -227,10 +308,8 @@ static INPUT_PORTS_START( hplanet )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_OTHER ) // ticket
 
 	PORT_START("IN2")
-	PORT_DIPNAME( 0x01, 0x01, "IN2" )
-	PORT_DIPSETTING(    0x01, DEF_STR( Off ) )
-	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x02, 0x02, DEF_STR( Unknown ) )
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_OTHER ) // battery NG if low
+	PORT_DIPNAME( 0x02, 0x02, "IN2" )
 	PORT_DIPSETTING(    0x02, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
 	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_CUSTOM ) PORT_READ_LINE_DEVICE_MEMBER("screen", FUNC(screen_device::vblank))
@@ -325,6 +404,65 @@ static INPUT_PORTS_START( hplanet )
 	PORT_DIPNAME( 0x80, 0x80, DEF_STR( Unknown ) )
 	PORT_DIPSETTING(    0x80, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
+
+	PORT_START("MEDAL0")
+	PORT_BIT( 0xff, IP_ACTIVE_HIGH, IPT_UNKNOWN )
+
+	PORT_START("MEDAL1")
+	PORT_BIT( 0xff, IP_ACTIVE_HIGH, IPT_UNUSED )
+
+	PORT_START("MEDAL2")
+	PORT_BIT( 0xff, IP_ACTIVE_HIGH, IPT_UNUSED )
+
+	PORT_START("MEDAL3")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_UNUSED )
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 04")
+	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 09")
+	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 14")
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 19")
+	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 24")
+	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 29")
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 34")
+
+	PORT_START("MEDAL4")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_UNUSED )
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 05")
+	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 10")
+	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 15")
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 20")
+	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 25")
+	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 30")
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 35")
+
+	PORT_START("MEDAL5")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 01")
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 06")
+	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 11")
+	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 16")
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 21")
+	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 26")
+	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 31")
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 36")
+
+	PORT_START("MEDAL6")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 02")
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 07")
+	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 12")
+	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 17")
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 22")
+	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 27")
+	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 32")
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 37")
+
+	PORT_START("MEDAL7")
+	PORT_BIT( 0x01, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 03")
+	PORT_BIT( 0x02, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 08")
+	PORT_BIT( 0x04, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 13")
+	PORT_BIT( 0x08, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 18")
+	PORT_BIT( 0x10, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 23")
+	PORT_BIT( 0x20, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 28")
+	PORT_BIT( 0x40, IP_ACTIVE_HIGH, IPT_OTHER ) PORT_NAME("Medal 33")
+	PORT_BIT( 0x80, IP_ACTIVE_HIGH, IPT_UNUSED )
 INPUT_PORTS_END
 
 // 3 irqs:
@@ -336,9 +474,11 @@ void sg_vga_state::sg_vga(machine_config &config)
 	// basic machine hardware
 	SH7043A(config, m_maincpu, 7.3728_MHz_XTAL * 4); // actually SH7045
 	m_maincpu->set_addrmap(AS_PROGRAM, &sg_vga_state::program_map);
-//	m_maincpu->read_portd().set_constant(0xffff'ffff);
-//	m_maincpu->read_porte().set_constant(0xffff);
-//	m_maincpu->read_portf().set_constant(0xffff);
+	m_maincpu->read_portd().set_constant(0);
+	m_maincpu->write_portd().set(FUNC(sg_vga_state::pd_w));
+	m_maincpu->read_porte().set(FUNC(sg_vga_state::pe_r));
+	m_maincpu->write_porte().set(FUNC(sg_vga_state::pe_w));
+	m_maincpu->read_portf().set(FUNC(sg_vga_state::pf_r));
 
 	screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
 	screen.set_refresh_hz(60);
@@ -361,10 +501,13 @@ void sg_vga_state::sg_vga(machine_config &config)
 	m_video->flip_screen_y_callback().set(FUNC(sg_vga_state::flip_screen_y_set));
 
 	// sound hardware
-	SPEAKER(config, "mono").front_center();
+	SPEAKER(config, "speaker", 2).front();
 
 	x1_010_device &x1snd(X1_010(config, "x1snd", 16'000'000)); // clock unknown
-	x1snd.add_route(ALL_OUTPUTS, "mono", 1.0);
+	x1snd.add_route(0, "speaker", 0.5, 0);
+	x1snd.add_route(1, "speaker", 0.5, 1);
+	x1snd.set_addrmap(0, &sg_vga_state::x1_map);
+
 }
 
 
@@ -381,11 +524,12 @@ ROM_START( hplanet )
 	ROM_LOAD64_WORD( "hp1_obj-3a.u03", 0x000006, 0x800000, CRC(17eeb4fd) SHA1(3bc30cd8f6a43d4aee9cd2da119dbab66c99565e) )
 	ROM_LOAD64_WORD( "hp1_obj-2a.u04", 0x000004, 0x800000, CRC(31f71432) SHA1(b572045af0c0ad54df72d9396168be004c07f7f7) )
 
-	ROM_REGION( 0x400000, "x1snd", 0 ) // TODO: bankswitched?
+	// bankswitched
+	ROM_REGION( 0x400000, "x1rom", 0 )
 	ROM_LOAD( "hp1_snd-0a.u42", 0x000000, 0x400000, CRC(a78b01e5) SHA1(20e904a2e01a7e40c037a7c4ab9bd1b4e9054c4d) )
 ROM_END
 
 } // anonymous namespace
 
 
-GAME( 2001, hplanet, 0, sg_vga, hplanet, sg_vga_state, empty_init, ROT0, "Namco", "Happy Planet (Japan)", MACHINE_IMPERFECT_SOUND | MACHINE_NOT_WORKING )
+GAME( 2001, hplanet, 0, sg_vga, hplanet, sg_vga_state, empty_init, ROT0, "Namco", "Happy Planet (Japan)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_NOT_WORKING )

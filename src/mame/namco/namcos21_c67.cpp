@@ -1,10 +1,19 @@
 // license:BSD-3-Clause
 // copyright-holders:Phil Stroffolino
 /*
-    NOTES:
 
-    Air Combat:
-         priority issues
+TODO (2026 update):
+- how the 3d rasterizer really selects banks 1 & 2? aircomb is the odd one, it has a red shaded
+  bank from time to time;
+- aircomb: z-fighting issue on attract mode with the plane renders (after the first title screen);
+- aircomb: sprites blends badly with background pen when warning appears and the src target is the sky color
+  (i.e. pen 0xff with current handling);
+- aircomb: level select/continue screen draws with a red pen, should be pure black according to refs;
+- aircomb: missing background on attract mode ranking screen (masking? cfr. shared/namco_c355spr.cpp);
+- cybsled: https://mametesters.org/view.php?id=6302
+- solvalou: https://mametesters.org/view.php?id=2085
+- solvalou: black screen on service mode (cfr. shared/namco_c355spr.cpp);
+- starblad: 3d freezes after exiting service mode;
 
 TODO:   namcoic.c: in StarBlade, the sprite list is stored at a different location during startup tests.
         What register controls this?
@@ -401,14 +410,28 @@ u32 namcos21_c67_state::screen_update(screen_device &screen, bitmap_ind16 &bitma
 	screen.priority().fill(0, cliprect);
 	m_c355spr->build_sprite_list_and_render_sprites(cliprect); // TODO : buffered?
 
+	const u16 pri1 = (m_palette->read16_ext(0) >> 8) & 7;
+//	const u16 pri2 = (m_palette->read16_ext(1) >> 8) & 7; // always '2'?
+
 	m_c355spr->draw(screen, bitmap, cliprect, 2);
 
 	m_namcos21_3d->copy_visible_poly_framebuffer(bitmap, cliprect, 0x7fc0, 0x7ffe);
 
-	m_c355spr->draw(screen, bitmap, cliprect, 0);
-	m_c355spr->draw(screen, bitmap, cliprect, 1);
-
-	m_namcos21_3d->copy_visible_poly_framebuffer(bitmap, cliprect, 0, 0x7fbf);
+	switch(pri1)
+	{
+		case 0: // aircomb mission select & gameplay
+			m_namcos21_3d->copy_visible_poly_framebuffer(bitmap, cliprect, 0, 0x7fbf);
+			m_c355spr->draw(screen, bitmap, cliprect, 0);
+			m_c355spr->draw(screen, bitmap, cliprect, 1);
+			break;
+		case 4: // default gameplay for all games, aircomb attract mode
+		case 2: // TODO: starblad/solvalou when going in service mode
+		default:
+			m_c355spr->draw(screen, bitmap, cliprect, 0);
+			m_c355spr->draw(screen, bitmap, cliprect, 1);
+			m_namcos21_3d->copy_visible_poly_framebuffer(bitmap, cliprect, 0, 0x7fbf);
+			break;
+	}
 
 	/* draw high priority 2d sprites */
 	for (int pri = pivot; pri < 8; pri++)

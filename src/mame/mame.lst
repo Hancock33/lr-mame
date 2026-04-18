@@ -493,7 +493,6 @@ elitdisc
 excellnt
 extrbltt
 fullhous
-glksstrn
 herzas
 herzasf1
 herzasf8
@@ -530,6 +529,7 @@ dpplson
 dscbonus
 dscjkpot
 gjubil
+glksstrn
 grandhnd
 grnada
 jack4000
@@ -16718,6 +16718,7 @@ minimonya
 minimonyb
 
 @source:cirsa/miniguay.cpp
+minibar
 miniguay
 
 @source:cirsa/missbamby.cpp
@@ -18856,6 +18857,7 @@ bangjb
 chmppool
 jungleani
 lizardhunt
+luckyclrs
 maniacsq
 maniacsqa
 maniacsqb
@@ -22397,6 +22399,7 @@ spelunk2
 spelunkr
 spelunkrj
 yanchamr
+yanjamar
 youjyudn
 
 @source:irem/m62_bkungfu.cpp
@@ -29150,6 +29153,9 @@ wmg
 @source:midway/zwackery.cpp
 zwackery
 
+@source:miltonbradley/grandmaster.cpp
+grandmas
+
 @source:miltonbradley/microvision.cpp
 microvsn
 
@@ -34728,6 +34734,7 @@ ridgera28
 ridgera2j
 ridgera2ja
 ridgerac
+ridgerac3m
 ridgeraca
 ridgeracb
 ridgeracc
@@ -36136,6 +36143,8 @@ gcs2mgp
 gon100
 goretrop
 goretropa
+goretropu12
+goretropu13
 gtct885
 h12p1000
 hkb502
@@ -44012,6 +44021,7 @@ aladdin
 aladdina
 cmast92
 cmast92a
+dynamj
 eldoradd
 eldoraddo
 eldoraddob
@@ -48305,6 +48315,7 @@ mcom4_02
 minicom
 
 @source:umc/pc486vl.cpp
+md4duv
 pccm912
 sy019s
 tku5s

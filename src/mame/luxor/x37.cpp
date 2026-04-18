@@ -13,9 +13,7 @@
 
 	TODO
 
-	- trap 46 on boot
-	- SASI
-	- bus errors
+	- trap on boot
 	- tst.w 0xfffffc
 	- SCC interrupt acknowledge
 
@@ -44,7 +42,7 @@
 
 namespace {
 
-//#define VERBOSE 0
+//#define VERBOSE 1
 #include "logmacro.h"
 
 #define MC68010_TAG  "14m"
@@ -151,7 +149,7 @@ void x37_state::program_map(address_map &map)
 	map(0xfc0000, 0xfc0007).rw(m_scc[0], FUNC(z80scc_device::ab_dc_r), FUNC(z80scc_device::ab_dc_w)).umask16(0x00ff);
 	map(0xfc0010, 0xfc0017).rw(m_scc[1], FUNC(z80scc_device::ab_dc_r), FUNC(z80scc_device::ab_dc_w)).umask16(0x00ff);
 	map(0xfc0020, 0xfc0027).rw(m_scc[2], FUNC(z80scc_device::ab_dc_r), FUNC(z80scc_device::ab_dc_w)).umask16(0x00ff);
-	map(0xfd5000, 0xfd5001).rw(m_sasi, FUNC(luxor_x37_sasi_device::tre_r), FUNC(luxor_x37_sasi_device::tre_w));
+	map(0xfd5000, 0xfd501f).rw(m_sasi, FUNC(luxor_x37_sasi_device::tre_r), FUNC(luxor_x37_sasi_device::tre_w));
 	map(0xfd5080, 0xfd509f).rw(m_sasi, FUNC(luxor_x37_sasi_device::stat_r), FUNC(luxor_x37_sasi_device::ctrl_w));
 	map(0xfdb040, 0xfdb041).rw(m_fdc, FUNC(fd1797_device::status_r), FUNC(fd1797_device::cmd_w)).umask16(0x00ff);
 	map(0xfdb042, 0xfdb043).rw(m_fdc, FUNC(fd1797_device::track_r), FUNC(fd1797_device::track_w)).umask16(0x00ff);
@@ -207,7 +205,12 @@ uint16_t x37_state::ram_r(offs_t offset, uint16_t mem_mask)
 		bool at0, at1;
 		offs_t const ma = get_ma(offset, at0, at1);
 
-		if (ma < 0x400000) {
+		if (!machine().side_effects_disabled() && at1 && !at0) {
+			// AT1=1, AT0=0: no access
+			m_cpu->set_input_line(M68K_LINE_BUSERROR, ASSERT_LINE);
+			m_cpu->set_input_line(M68K_LINE_BUSERROR, CLEAR_LINE);
+			logerror("%s: Invalid RAM read at offset %06x (MA %06x, AT1=1, AT0=0)\n", machine().describe_context(), offset<<1, ma);
+		} else if (ma < 0x400000) {
 			if (ACCESSING_BITS_0_7)
 				data |= m_ram[ma & ~1];
 			if (ACCESSING_BITS_8_15)
@@ -224,6 +227,14 @@ void x37_state::ram_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 {
 	bool at0, at1;
 	offs_t const ma = get_ma(offset, at0, at1);
+
+	if (!machine().side_effects_disabled() && !at0) {
+		// AT0=0: read-only (AT1=0) or no access (AT1=1)
+		m_cpu->set_input_line(M68K_LINE_BUSERROR, ASSERT_LINE);
+		m_cpu->set_input_line(M68K_LINE_BUSERROR, CLEAR_LINE);
+		logerror("%s: Invalid RAM write at offset %06x (MA %06x, AT1=%d, AT0=0)\n", machine().describe_context(), offset<<1, ma, at1);
+		return;
+	}
 
 	if (ma < 0x400000) {
 		if (ACCESSING_BITS_0_7)
@@ -429,7 +440,7 @@ void x37_state::xdck_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 
 	*/
 
-	logerror("%s XDCK %04x\n", machine().describe_context(), data);
+	LOG("%s XDCK %04x\n", machine().describe_context(), data);
 
 	if (ACCESSING_BITS_0_7) {
 		m_fdc->mr_w(BIT(data, 0));
@@ -491,6 +502,12 @@ void x37_state::x37(machine_config &config)
 	NS32081(config, m_fpu, XTAL(20'000'000)/2);
 
 	HD63450(config, m_dmac, XTAL(20'000'000)/2, m_cpu, AS_PROGRAM);
+	m_dmac->set_burst_clocks(
+		attotime::from_nsec(120),  // ch0
+		attotime::zero,
+		attotime::zero,
+		attotime::zero
+	);
 
 	Z8536(config, m_cio, XTAL(20'000'000)/4);
 	m_cio->irq_wr_cb().set_inputline(m_cpu, M68K_IRQ_3);
