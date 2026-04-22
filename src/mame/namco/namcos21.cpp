@@ -34,26 +34,15 @@ shade pixels according to their depth.
 
 -------------------
 
+TODO:
+- polygon glitches/flicker
+- posirq effects for bitmap layer not working, eg. winrungp titlescreen should be a checkerboard pattern
+- is there a video_enable flag?
+- car engine sound is wrong
 
-
-Winning Run
-    polygon glitches/flicker
-    posirq effects for bitmap layer not working
-    priority, mixing incorrection (specifically title screen and background color)
-
-
-    NOTES:
-
-    Winning Run
-    Winning Run 91
-        working
-          - some minor polygon glitches
-          - posirq handling broken
-          - priority, mixing incorrection
-
-    reference videos
-    - https://youtu.be/ZNNveBLWevg
-    - https://youtu.be/KazxHW9wQ60
+reference videos:
+- https://youtu.be/ZNNveBLWevg
+- https://youtu.be/KazxHW9wQ60
 
 *****************************
 
@@ -355,26 +344,22 @@ private:
 	required_device<namcos21_dsp_device> m_namcos21_dsp;
 
 	std::unique_ptr<uint8_t[]> m_gpu_videoram;
-	std::unique_ptr<uint8_t[]> m_gpu_maskram;
 
-	uint16_t m_video_enable;
-
-	uint16_t m_winrun_color;
-	uint16_t m_winrun_gpu_register[0x10/2];
-	uint16_t video_enable_r();
-	void video_enable_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
+	uint8_t m_gpu_videoram_mask = 0;
+	uint16_t m_gpu_color = 0;
+	uint16_t m_gpu_register[0x10/2] = { };
 
 	uint16_t dpram_word_r(offs_t offset);
 	void dpram_word_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	uint8_t dpram_byte_r(offs_t offset);
 	void dpram_byte_w(offs_t offset, uint8_t data);
 
-	uint16_t winrun_gpu_color_r();
-	void winrun_gpu_color_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
-	uint16_t winrun_gpu_register_r(offs_t offset);
-	void winrun_gpu_register_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
-	void winrun_gpu_videoram_w(offs_t offset, uint16_t data);
-	uint16_t winrun_gpu_videoram_r(offs_t offset);
+	uint16_t gpu_color_r();
+	void gpu_color_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
+	uint16_t gpu_register_r(offs_t offset);
+	void gpu_register_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
+	void gpu_videoram_w(offs_t offset, uint16_t data);
+	uint16_t gpu_videoram_r(offs_t offset);
 
 	void eeprom_w(offs_t offset, uint8_t data);
 	uint8_t eeprom_r(offs_t offset);
@@ -391,13 +376,13 @@ private:
 
 	uint32_t screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect);
 
-	void winrun_bitmap_draw(bitmap_ind16 &bitmap, const rectangle &cliprect);
+	void bitmap_draw(bitmap_ind16 &bitmap, const rectangle &cliprect);
 
 	void configure_c65_namcos21(machine_config &config);
 
-	void winrun_master_map(address_map &map) ATTR_COLD;
-	void winrun_slave_map(address_map &map) ATTR_COLD;
-	void winrun_gpu_map(address_map &map) ATTR_COLD;
+	void master_map(address_map &map) ATTR_COLD;
+	void slave_map(address_map &map) ATTR_COLD;
+	void gpu_map(address_map &map) ATTR_COLD;
 
 	void sound_map(address_map &map) ATTR_COLD;
 	void c140_map(address_map &map) ATTR_COLD;
@@ -406,60 +391,55 @@ private:
 void namcos21_state::video_start()
 {
 	m_gpu_videoram = std::make_unique<uint8_t[]>(0x80000);
-	m_gpu_maskram = std::make_unique<uint8_t[]>(0x80000);
-
 	save_pointer(NAME(m_gpu_videoram), 0x80000);
-	save_pointer(NAME(m_gpu_maskram), 0x80000);
 }
 
-uint16_t namcos21_state::winrun_gpu_color_r()
+uint16_t namcos21_state::gpu_color_r()
 {
-	return m_winrun_color;
+	return m_gpu_color;
 }
 
-void namcos21_state::winrun_gpu_color_w(offs_t offset, uint16_t data, uint16_t mem_mask)
+void namcos21_state::gpu_color_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 {
-	COMBINE_DATA( &m_winrun_color );
+	COMBINE_DATA( &m_gpu_color );
 }
 
-uint16_t namcos21_state::winrun_gpu_register_r(offs_t offset)
+uint16_t namcos21_state::gpu_register_r(offs_t offset)
 {
-	return m_winrun_gpu_register[offset];
+	return m_gpu_register[offset];
 }
 
-void namcos21_state::winrun_gpu_register_w(offs_t offset, uint16_t data, uint16_t mem_mask)
+void namcos21_state::gpu_register_w(offs_t offset, uint16_t data, uint16_t mem_mask)
 {
-	COMBINE_DATA( &m_winrun_gpu_register[offset] );
 	m_screen->update_partial(m_screen->vpos());
+	COMBINE_DATA( &m_gpu_register[offset] );
 }
 
-void namcos21_state::winrun_gpu_videoram_w(offs_t offset, uint16_t data)
+void namcos21_state::gpu_videoram_w(offs_t offset, uint16_t data)
 {
-	int color = data>>8;
-	int mask  = data&0xff;
-	for( int i=0; i<8; i++ )
+	uint8_t color = data >> 8;
+	for (int i = 0; i < 8; i++)
 	{
-		if( mask&(0x01<<i) )
-		{
-			m_gpu_videoram[(offset+i)&0x7ffff] = color;
-			m_gpu_maskram[(offset+i)&0x7ffff] = mask;
-		}
+		if (BIT(data, i))
+			m_gpu_videoram[(offset + i) & 0x7ffff] = color;
 	}
+
+	m_gpu_videoram_mask = data & 0xff;
 }
 
-uint16_t namcos21_state::winrun_gpu_videoram_r(offs_t offset)
+uint16_t namcos21_state::gpu_videoram_r(offs_t offset)
 {
-	return (m_gpu_videoram[offset]<<8) | m_gpu_maskram[offset];
+	return (m_gpu_videoram[offset] << 8) | m_gpu_videoram_mask;
 }
 
-void namcos21_state::winrun_bitmap_draw(bitmap_ind16 &bitmap, const rectangle &cliprect)
+void namcos21_state::bitmap_draw(bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
 	uint8_t const *const videoram = m_gpu_videoram.get();
-	//printf("%d %d (%d %d) - %04x %04x %04x|%04x %04x\n",cliprect.top(),cliprect.bottom(),m_screen->vpos(),m_gpu_intc->get_posirq_line(),m_winrun_gpu_register[0],m_winrun_gpu_register[2/2],m_winrun_gpu_register[4/2],m_winrun_gpu_register[0xa/2],m_winrun_gpu_register[0xc/2]);
+	//printf("%d %d (%d %d) - %04x %04x %04x|%04x %04x\n",cliprect.top(),cliprect.bottom(),m_screen->vpos(),m_gpu_intc->get_posirq_line(),m_gpu_register[0],m_gpu_register[2/2],m_gpu_register[4/2],m_gpu_register[0xa/2],m_gpu_register[0xc/2]);
 
-	int const yscroll = -cliprect.top()+(int16_t)m_winrun_gpu_register[0x2/2];
-	int const xscroll = 0;//m_winrun_gpu_register[0xc/2] >> 7;
-	int const base = 0x1000+0x100*(m_winrun_color&0xf);
+	int const yscroll = -cliprect.top()+(int16_t)m_gpu_register[0x2/2];
+	int const xscroll = 0;//m_gpu_register[0xc/2] >> 7;
+	int const base = 0x1000+0x100*(m_gpu_color&0xf);
 	for( int sy=cliprect.top(); sy<=cliprect.bottom(); sy++ )
 	{
 		uint8_t const *const pSource = &videoram[((yscroll+sy)&0x3ff)*0x200];
@@ -471,18 +451,24 @@ void namcos21_state::winrun_bitmap_draw(bitmap_ind16 &bitmap, const rectangle &c
 			{
 			case 0xff:
 				break;
-			// TODO: additive blending?
-			// - winrun car select uses register [0xc] for a xscroll value
-			// - winrun windshield during gameplay (reversed 0x6000 and 0x4000 bases?)
+
 			// NOTE: very similar to namcos21_c67_state::sprite_mix_callback
 			case 0x00:
-				pDest[sx] = (pDest[sx]&0x1fff)+0x4000;
+				if ((pDest[sx] & 0xff) != 0xff)
+					pDest[sx] = 0x4000 | (pDest[sx] & 0x1fff);
+				else
+					pDest[sx] = (base & 0xf00) | 0;
 				break;
+
 			case 0x01:
-				pDest[sx] = (pDest[sx]&0x1fff)+0x6000;
+				if ((pDest[sx] & 0xff) != 0xff)
+					pDest[sx] = 0x6000 | (pDest[sx] & 0x1fff);
+				else
+					pDest[sx] = (base & 0xf00) | 1;
 				break;
+
 			default:
-				pDest[sx] = base|pen;
+				pDest[sx] = base | pen;
 				break;
 			}
 		}
@@ -492,7 +478,7 @@ void namcos21_state::winrun_bitmap_draw(bitmap_ind16 &bitmap, const rectangle &c
 
 uint32_t namcos21_state::screen_update(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect)
 {
-	bitmap.fill(0, cliprect);
+	bitmap.fill((m_gpu_color << 8 & 0xf00) | 0xff, cliprect);
 
 	// entries 0 and 1 unused parts controls priority mixing
 	const u16 pri = (m_palette->read16_ext(1) >> 8) & 7;
@@ -501,41 +487,25 @@ uint32_t namcos21_state::screen_update(screen_device &screen, bitmap_ind16 &bitm
 	{
 		case 5: // title screen for all games here
 			m_namcos21_3d->copy_visible_poly_framebuffer(bitmap, cliprect, 0x7fc0, 0x7ffe);
-			winrun_bitmap_draw(bitmap,cliprect);
+			bitmap_draw(bitmap,cliprect);
 			m_namcos21_3d->copy_visible_poly_framebuffer(bitmap, cliprect, 0, 0x7fbf);
 			break;
 		case 0: // service mode
-			winrun_bitmap_draw(bitmap,cliprect);
+			bitmap_draw(bitmap,cliprect);
 			break;
 		case 2: // gameplay
 		default:
 			m_namcos21_3d->copy_visible_poly_framebuffer(bitmap, cliprect, 0x7fc0, 0x7ffe);
 			m_namcos21_3d->copy_visible_poly_framebuffer(bitmap, cliprect, 0, 0x7fbf);
-			winrun_bitmap_draw(bitmap,cliprect);
+			bitmap_draw(bitmap,cliprect);
 			break;
 	}
 
-
-	//popmessage("%04x %04x %04x|%04x %04x",m_winrun_gpu_register[0],m_winrun_gpu_register[2/2],m_winrun_gpu_register[4/2],m_winrun_gpu_register[0xa/2],m_winrun_gpu_register[0xc/2]);
+	//popmessage("%04x %04x %04x|%04x %04x",m_gpu_register[0],m_gpu_register[2/2],m_gpu_register[4/2],m_gpu_register[0xa/2],m_gpu_register[0xc/2]);
 
 	return 0;
 }
 
-
-
-[[maybe_unused]] uint16_t namcos21_state::video_enable_r()
-{
-	return m_video_enable;
-}
-
-[[maybe_unused]] void namcos21_state::video_enable_w(offs_t offset, uint16_t data, uint16_t mem_mask)
-{
-	COMBINE_DATA( &m_video_enable ); /* 0x40 = enable */
-	if( m_video_enable!=0 && m_video_enable!=0x40 )
-	{
-		logerror( "unexpected video_enable_w=0x%x\n", m_video_enable );
-	}
-}
 
 /***********************************************************/
 
@@ -566,7 +536,7 @@ void namcos21_state::dpram_byte_w(offs_t offset, uint8_t data)
 
 /******************************************************************************/
 
-void namcos21_state::winrun_master_map(address_map &map)
+void namcos21_state::master_map(address_map &map)
 {
 	map(0x000000, 0x03ffff).rom();
 	map(0x100000, 0x10ffff).ram(); /* work RAM */
@@ -590,7 +560,7 @@ void namcos21_state::winrun_master_map(address_map &map)
 	map(0xb80000, 0xb8000f).m(m_sci, FUNC(namco_c139_device::regs_map));
 }
 
-void namcos21_state::winrun_slave_map(address_map &map)
+void namcos21_state::slave_map(address_map &map)
 {
 	map(0x000000, 0x03ffff).rom();
 	map(0x100000, 0x13ffff).ram();
@@ -604,18 +574,18 @@ void namcos21_state::winrun_slave_map(address_map &map)
 }
 
 
-void namcos21_state::winrun_gpu_map(address_map &map)
+void namcos21_state::gpu_map(address_map &map)
 {
 	map(0x000000, 0x07ffff).rom();
-	map(0x100000, 0x100001).rw(FUNC(namcos21_state::winrun_gpu_color_r), FUNC(namcos21_state::winrun_gpu_color_w)); /* ? */
+	map(0x100000, 0x100001).rw(FUNC(namcos21_state::gpu_color_r), FUNC(namcos21_state::gpu_color_w)); /* ? */
 	map(0x180000, 0x19ffff).ram(); /* work RAM */
 	map(0x1c0000, 0x1fffff).m(m_gpu_intc, FUNC(namco_c148_device::map));
 	map(0x200000, 0x20ffff).ram().share("gpu_comram");
 	map(0x400000, 0x40ffff).ram().w(m_palette, FUNC(palette_device::write16)).share("palette");
 	map(0x410000, 0x41ffff).ram().w(m_palette, FUNC(palette_device::write16_ext)).share("palette_ext");
 	map(0x600000, 0x6fffff).rom().region("gdata", 0);
-	map(0xc00000, 0xcfffff).rw(FUNC(namcos21_state::winrun_gpu_videoram_r), FUNC(namcos21_state::winrun_gpu_videoram_w));
-	map(0xd00000, 0xd0000f).rw(FUNC(namcos21_state::winrun_gpu_register_r), FUNC(namcos21_state::winrun_gpu_register_w));
+	map(0xc00000, 0xcfffff).rw(FUNC(namcos21_state::gpu_videoram_r), FUNC(namcos21_state::gpu_videoram_w));
+	map(0xd00000, 0xd0000f).rw(FUNC(namcos21_state::gpu_register_r), FUNC(namcos21_state::gpu_register_w));
 	map(0xe0000d, 0xe0000d).rw(m_gpu_intc, FUNC(namco_c148_device::ext_posirq_line_r), FUNC(namco_c148_device::ext_posirq_line_w));
 }
 
@@ -681,11 +651,13 @@ void namcos21_state::configure_c65_namcos21(machine_config &config)
 /*                                                           */
 /*************************************************************/
 
-static INPUT_PORTS_START( s21default )
+static INPUT_PORTS_START( winrun )
 	PORT_START("MCUB")     /* 63B05Z0 - PORT B */
-	PORT_BIT( 0x3f, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_START2 )
-	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_START1 )
+	PORT_BIT( 0x0f, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_START2 ) /* ? */
+	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_START1 ) /* ? */
+	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNUSED ) /* ? */
+	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNUSED ) /* ? */
 
 	PORT_START("MCUC")     /* 63B05Z0 - PORT C & SCI */
 	PORT_BIT( 0x0f, IP_ACTIVE_LOW, IPT_UNUSED )
@@ -694,30 +666,30 @@ static INPUT_PORTS_START( s21default )
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_SERVICE ) PORT_NAME("Service Button") PORT_CODE(KEYCODE_0) PORT_TOGGLE // alt test mode switch
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_SERVICE1 )
 
-	PORT_START("AN0")       /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 0 */
+	PORT_START("AN0")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 0 */
 	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_START("AN1")       /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 1 */
-	PORT_BIT( 0xff, 0x80, IPT_AD_STICK_X ) PORT_MINMAX(0x60,0x9f) PORT_SENSITIVITY(15) PORT_KEYDELTA(10)
-	PORT_START("AN2")       /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 2 */
-	PORT_BIT( 0xff, 0x80, IPT_AD_STICK_Y ) PORT_MINMAX(0x60,0x9f) PORT_SENSITIVITY(20) PORT_KEYDELTA(10)
-	PORT_START("AN3")       /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 3 */
+	PORT_START("AN1")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 1 */
+	PORT_BIT( 0xff, 0x00, IPT_PEDAL ) PORT_MINMAX(0x00,0x3f) PORT_SENSITIVITY(15) PORT_KEYDELTA(10) PORT_NAME("Gas Pedal")
+	PORT_START("AN2")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 2 */
+	PORT_BIT( 0xff, 0x80, IPT_PADDLE ) PORT_MINMAX(0x00,0xff) PORT_SENSITIVITY(25) PORT_KEYDELTA(10) PORT_NAME("Steering Wheel")
+	PORT_START("AN3")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 3 */
+	PORT_BIT( 0xff, 0x00, IPT_PEDAL2 ) PORT_MINMAX(0x00,0x3f) PORT_SENSITIVITY(15) PORT_KEYDELTA(10) PORT_NAME("Brake Pedal")
+	PORT_START("AN4")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 4 */
 	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_START("AN4")       /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 4 */
+	PORT_START("AN5")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 5 */
 	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_START("AN5")       /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 5 */
+	PORT_START("AN6")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 6 */
 	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_START("AN6")       /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 6 */
-	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_START("AN7")       /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 7 */
+	PORT_START("AN7")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 7 */
 	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
 
 	PORT_START("MCUH")     /* 63B05Z0 - PORT H */
-	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_BUTTON4 )
-	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_BUTTON3 )
+	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNUSED )
+	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_BUTTON2 )
+	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN ) PORT_NAME("Shift Down")
 	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_BUTTON1 )
+	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_JOYSTICK_UP   ) PORT_NAME("Shift Up")
 	PORT_BIT( 0xc0, IP_ACTIVE_LOW, IPT_UNUSED )
 
 	PORT_START("DSW")       /* 63B05Z0 - $2000 DIP SW */
@@ -734,7 +706,7 @@ static INPUT_PORTS_START( s21default )
 	PORT_DIPNAME( 0x10, 0x10, "DSW5")
 	PORT_DIPSETTING(    0x10, DEF_STR( Off ) )
 	PORT_DIPSETTING(    0x00, DEF_STR( On ) )
-	PORT_DIPNAME( 0x20, 0x00, "PCM ROM")
+	PORT_DIPNAME( 0x20, 0x20, "PCM ROM")
 	PORT_DIPSETTING(    0x20, "2M" )
 	PORT_DIPSETTING(    0x00, "4M" )
 	PORT_DIPNAME( 0x40, 0x40, "DSW7")
@@ -752,48 +724,6 @@ static INPUT_PORTS_START( s21default )
 	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
 	PORT_START("MCUDI3")     /* 63B05Z0 - $3003 */
 	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-INPUT_PORTS_END
-
-/* "SCI - ? */
-static INPUT_PORTS_START( winrun )
-	PORT_INCLUDE(s21default)
-
-	PORT_MODIFY("DSW")
-	PORT_DIPNAME( 0x20, 0x20, "PCM ROM")
-	PORT_DIPSETTING(    0x20, "2M" )
-	PORT_DIPSETTING(    0x00, "4M" )
-
-	PORT_MODIFY("MCUB")        /* 63B05Z0 - PORT B */
-	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_START2 ) /* ? */
-	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_START1 ) /* ? */
-	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNUSED ) /* ? */
-	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_UNUSED ) /* ? */
-
-	PORT_MODIFY("AN0")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 0 */
-	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_MODIFY("AN1")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 1 */
-	PORT_BIT( 0xff, 0x80, IPT_PEDAL ) PORT_MINMAX(0x00,0xff) PORT_SENSITIVITY(15) PORT_KEYDELTA(10) PORT_NAME("Gas Pedal")
-	PORT_MODIFY("AN2")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 2 */
-	PORT_BIT( 0xff, 0x80, IPT_PADDLE ) PORT_MINMAX(0x00,0xff) PORT_SENSITIVITY(15) PORT_KEYDELTA(10) PORT_NAME("Steering Wheel")
-	PORT_MODIFY("AN3")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 3 */
-	PORT_BIT( 0xff, 0x80, IPT_PEDAL2 ) PORT_MINMAX(0x00,0xff) PORT_SENSITIVITY(15) PORT_KEYDELTA(10) PORT_NAME("Brake Pedal")
-	PORT_MODIFY("AN4")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 4 */
-	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_MODIFY("AN5")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 5 */
-	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_MODIFY("AN6")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 6 */
-	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_MODIFY("AN7")      /* 63B05Z0 - 8 CHANNEL ANALOG - CHANNEL 7 */
-	PORT_BIT( 0xff, IP_ACTIVE_LOW, IPT_UNUSED )
-
-	PORT_MODIFY("MCUH")        /* 63B05Z0 - PORT H */
-	PORT_BIT( 0x01, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN ) PORT_NAME("Shift Down")
-	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_UNUSED )
-	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_JOYSTICK_UP   ) PORT_NAME("Shift Up")
-	PORT_BIT( 0xc0, IP_ACTIVE_LOW, IPT_UNUSED )
 INPUT_PORTS_END
 
 static INPUT_PORTS_START( winrungp )
@@ -871,9 +801,9 @@ void namcos21_state::machine_start()
 	for (int i = 0; i < 0x10; i++)
 		m_audiobank->configure_entry(i, memregion("audiocpu")->base() + (i % max) * 0x4000);
 
-	save_item(NAME(m_video_enable));
-	save_item(NAME(m_winrun_color));
-	save_item(NAME(m_winrun_gpu_register));
+	save_item(NAME(m_gpu_videoram_mask));
+	save_item(NAME(m_gpu_color));
+	save_item(NAME(m_gpu_register));
 }
 
 TIMER_DEVICE_CALLBACK_MEMBER(namcos21_state::screen_scanline)
@@ -907,11 +837,11 @@ void namcos21_state::configure_c148_standard(machine_config &config)
 void namcos21_state::winrun(machine_config &config)
 {
 	M68000(config, m_maincpu, 49.152_MHz_XTAL / 4); /* Master */
-	m_maincpu->set_addrmap(AS_PROGRAM, &namcos21_state::winrun_master_map);
+	m_maincpu->set_addrmap(AS_PROGRAM, &namcos21_state::master_map);
 	TIMER(config, "scantimer").configure_scanline(FUNC(namcos21_state::screen_scanline), "screen", 0, 1);
 
 	M68000(config, m_slave, 49.152_MHz_XTAL / 4); /* Slave */
-	m_slave->set_addrmap(AS_PROGRAM, &namcos21_state::winrun_slave_map);
+	m_slave->set_addrmap(AS_PROGRAM, &namcos21_state::slave_map);
 
 	MC6809E(config, m_audiocpu, 49.152_MHz_XTAL / 24); /* Sound */
 	m_audiocpu->set_addrmap(AS_PROGRAM, &namcos21_state::sound_map);
@@ -923,7 +853,7 @@ void namcos21_state::winrun(machine_config &config)
 	m_namcos21_dsp->set_renderer_tag("namcos21_3d");
 
 	m68000_device &gpu(M68000(config, "gpu", 49.152_MHz_XTAL / 4)); /* graphics coprocessor */
-	gpu.set_addrmap(AS_PROGRAM, &namcos21_state::winrun_gpu_map);
+	gpu.set_addrmap(AS_PROGRAM, &namcos21_state::gpu_map);
 
 	configure_c148_standard(config);
 	NAMCO_C148(config, m_gpu_intc, 0, "gpu", false);
@@ -942,14 +872,14 @@ void namcos21_state::winrun(machine_config &config)
 	PALETTE(config, m_palette).set_format(palette_device::xBRG_888, 0x10000/2);
 
 	NAMCOS21_3D(config, m_namcos21_3d, 0);
-	m_namcos21_3d->set_fixed_palbase(0x4000);
+	m_namcos21_3d->set_fixed_palbase(0x2000);
 	m_namcos21_3d->set_zz_shift_mult(10, 0x100);
 	m_namcos21_3d->set_depth_reverse(true);
-	m_namcos21_3d->set_framebuffer_size(496,480);
+	m_namcos21_3d->set_framebuffer_size(496, 480);
 
 	SPEAKER(config, "speaker", 2).front();
 
-	C140(config, m_c140, 49.152_MHz_XTAL / 2304);
+	C140(config, m_c140, 49.152_MHz_XTAL / 384 / 6);
 	m_c140->set_addrmap(0, &namcos21_state::c140_map);
 	m_c140->int1_callback().set_inputline(m_audiocpu, M6809_FIRQ_LINE);
 	m_c140->add_route(0, "speaker", 0.50, 0);
@@ -1123,10 +1053,10 @@ ROM_END
 } // Anonymous namespace
 
 
-/*    YEAR  NAME       PARENT    MACHINE   INPUT       CLASS           INIT           MONITOR  COMPANY  FULLNAME                                 FLAGS */
+/*    YEAR  NAME       PARENT    MACHINE   INPUT       CLASS           INIT          MONITOR  COMPANY  FULLNAME                                                           FLAGS */
 
-// Original 'Namco System 21' with C65 I/O MCU, uses TMS320C25 DSP with no custom part number
-GAME( 1988, winrun,    0,        winrun,   winrun,     namcos21_state, empty_init,   ROT0,    "Namco", "Winning Run (World) (89/06/06, Ver.09)",                   MACHINE_IMPERFECT_GRAPHICS ) // Sub Ver.09, 1989, Graphic Ver .06, 89/01/14, Sound Ver.2.00
-GAME( 1989, winrungp,  0,        winrun,   winrungp,   namcos21_state, empty_init,   ROT0,    "Namco", "Winning Run Suzuka Grand Prix (Japan) (89/12/03, Ver.02)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_NODEVICE_LAN ) // Sub Ver.02, 1989, Graphic Ver.02 89/12/03, Sound Ver.0000
+GAME( 1988, winrun,    0,        winrun,   winrun,     namcos21_state, empty_init,   ROT0,    "Namco", "Winning Run (World) (89/06/06, Ver.09)",                          MACHINE_IMPERFECT_GRAPHICS | MACHINE_IMPERFECT_SOUND ) // Sub Ver.09, 1989, Graphic Ver .06, 89/01/14, Sound Ver.2.00
+GAME( 1989, winrungp,  0,        winrun,   winrungp,   namcos21_state, empty_init,   ROT0,    "Namco", "Winning Run Suzuka Grand Prix (Japan) (89/12/03, Ver.02)",        MACHINE_IMPERFECT_GRAPHICS | MACHINE_IMPERFECT_SOUND | MACHINE_NODEVICE_LAN ) // Sub Ver.02, 1989, Graphic Ver.02 89/12/03, Sound Ver.0000
+
 // Available on a size/cost reduced 2 PCB set with 'Namco System 21B' printed on each board, still C65 I/O MCU, appears to be functionally identical to original NS21
-GAME( 1991, winrun91,  0,        winrun,   winrungp,   namcos21_state, empty_init,   ROT0,    "Namco", "Winning Run '91 (Japan) (1991/03/05, Main Ver 1.0, Sub Ver 1.0)",               MACHINE_IMPERFECT_GRAPHICS | MACHINE_NODEVICE_LAN )
+GAME( 1991, winrun91,  0,        winrun,   winrungp,   namcos21_state, empty_init,   ROT0,    "Namco", "Winning Run '91 (Japan) (1991/03/05, Main Ver 1.0, Sub Ver 1.0)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_IMPERFECT_SOUND | MACHINE_NODEVICE_LAN )

@@ -31,12 +31,9 @@ public:
 
 	// config
 	template <typename T> void set_renderer_tag(T &&tag) { m_renderer.set_tag(std::forward<T>(tag)); }
-	auto yield_hack_callback() { return m_yield_hack_cb.bind(); }
-
 	void set_gametype(int gametype) { m_gametype = gametype; }
 
 	uint16_t dspram16_r(offs_t offset);
-	void dspram16_hack_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	void dspram16_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	void pointram_control_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 	uint16_t pointram_data_r();
@@ -79,16 +76,14 @@ private:
 	};
 
 	required_device<namcos21_3d_device> m_renderer;
-	required_device<cpu_device> m_c67master;
-	required_device_array<cpu_device,4> m_c67slave;
+	required_device<namco_c67_device> m_c67master;
+	required_device_array<namco_c67_device, 4> m_c67slave;
 	required_region_ptr<int32_t> m_ptrom24;
 	std::unique_ptr<uint16_t []> m_dspram16;
 
 	required_shared_ptr<uint16_t> m_master_dsp_ram;
 
 	int m_gametype; // hacks
-	devcb_write_line m_yield_hack_cb;
-
 	std::unique_ptr<dsp_state> m_mpDspState;
 
 	std::unique_ptr<uint8_t []> m_pointram;
@@ -107,12 +102,12 @@ private:
 
 	int32_t read_pointrom_data(unsigned offset);
 	void transmit_word_to_slave(uint16_t data);
-	void transfer_dsp_data();
+	void transfer_dsp_data(bool first);
 	uint16_t read_word_from_slave_input();
 	uint16_t get_input_bytes_advertised_for_slave();
 	void render_slave_output(uint16_t data);
 
-	void namcos21_kickstart_hacks(int internal);
+	void namcos21_kickstart();
 
 	void dspcuskey_w(uint16_t data);
 	uint16_t dspcuskey_r();
