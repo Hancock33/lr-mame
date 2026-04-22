@@ -163,6 +163,10 @@ static void upload_output_audio_buffer()
    if (!audio_ready)
    {
       unsigned samples = (sample_rate / retro_fps) * sizeof(*output_audio_buffer.data);
+
+      if (output_audio_buffer.capacity - output_audio_buffer.size < samples)
+         ensure_output_audio_buffer_capacity((output_audio_buffer.capacity + samples) * 1.5);
+
       memset(output_audio_buffer.data + output_audio_buffer.size, 0, samples * sizeof(*output_audio_buffer.data));
       output_audio_buffer.size += samples;
    }
