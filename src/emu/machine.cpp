@@ -1445,6 +1445,8 @@ void running_machine::retro_loop()
 	else
 		call_notifiers(MACHINE_NOTIFY_FRAME);
 
+	running_machine::sound().retro_update_audio();
+
 	while (RLOOP == 1)
 	{
 		// execute CPUs if not paused
@@ -1458,8 +1460,6 @@ void running_machine::retro_loop()
 		if (m_saveload_schedule != saveload_schedule::NONE)
 			handle_saveload();
 	}
-
-	running_machine::sound().retro_update_audio();
 
 	if ((m_hard_reset_pending || m_exit_pending) && m_saveload_schedule == saveload_schedule::NONE)
 	{
