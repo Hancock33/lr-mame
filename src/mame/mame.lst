@@ -18993,6 +18993,23 @@ radikald
 @source:gaelco/rollext.cpp
 rollext
 
+@source:gaelco/scalextric.cpp
+scxam
+scxen
+scxena
+scxfr
+scxfra
+scxgr
+scxit
+scxita
+scxpt
+scxsp
+scxspa
+scxspb
+scxspc
+scxspd
+scxus
+
 @source:gaelco/splash.cpp
 funystrp
 nsplashkr
@@ -19013,6 +19030,12 @@ splashna
 @source:gaelco/splash_ms.cpp
 splashms
 splashmsa
+
+@source:gaelco/sralslot.cpp
+sralslot
+sralslota
+sralslotb
+sralslotc
 
 @source:gaelco/targeth.cpp
 quickshts
@@ -36723,6 +36746,7 @@ diamond2
 
 @source:novag/emerclp.cpp
 emerclp
+obsidian
 
 @source:novag/gomoku.cpp
 ngomoku

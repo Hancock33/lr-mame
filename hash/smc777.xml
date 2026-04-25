@@ -22,20 +22,13 @@ Magazine:
   Floppy Magazine 特別号
 
 SMCゲームパックI
-  法隆寺の謎 (houryuji?)
-  黄金の墓 (ougon?)
-  無人島脱出 (mujindas?)
-  ムー大陸の謎 (munazo?)
   チェスゲーム (royalchs?)
-  徳川風雲録 (tokugawa?)
-  妖花の謎 (younazo?)
 
 Home:
   ユーカラJJ - Yukar JJ
   グラフィックエディター(市販版) (one of these should be graphed)
   グラフィックエディター(777C添付版)
   ラッサピアターE - Rassapiator E
-
 
 Education:
   グラフィックスの世界(入門編) - (one of these should be graphw)
@@ -155,7 +148,8 @@ File viewer, useful for executing non autobootable disks in drive B:
 		<year>198?</year>
 		<publisher>&lt;unknown&gt;</publisher>
 		<notes><![CDATA[
-Unreadable graphics, should require [kanji] hookup
+[MC6845] uses 640x200x2bpp color mode
+Requires [kanji] hookup
 ]]></notes>
 
 		<part name="flop1" interface="floppy_3_5">
@@ -170,7 +164,8 @@ Unreadable graphics, should require [kanji] hookup
 		<year>198?</year>
 		<publisher>&lt;unknown&gt;</publisher>
 		<notes><![CDATA[
-Unreadable graphics, should require [kanji] hookup
+[MC6845] uses 640x200x2bpp color mode
+Requires [kanji] hookup
 ]]></notes>
 
 		<part name="flop1" interface="floppy_3_5">
@@ -316,12 +311,12 @@ Unresponsive [keyboard]
 	</software>
 
 	<software name="baicex" supported="no">
-		<!-- TODO: confirm title -->
 		<description>Baikin-kun no Gokiburi Taiji</description>
 		<year>1983</year>
 		<publisher>ソニー・クリエイティブプロダクツ (Sony Creative Products)</publisher>
 		<notes><![CDATA[
 [FDC] "LOAD ERROR"
+[keyboard] cannot start a game, prompts to hit number
 ]]></notes>
 		<info name="alt_title" value="バイキン君のゴキブリ退治"/>
 
@@ -379,12 +374,13 @@ Uneven [MC6845] display during gameplay
 		</part>
 	</software>
 
-	<software name="cloderun" supported="partial">
+	<software name="cloderun" supported="no">
 		<description>Championship Lode Runner</description>
 		<year>1985</year>
 		<publisher>ソニー (Sony)</publisher>
 		<notes><![CDATA[
 Untested [floppy] saving
+[keyboard] movements are too slow compared to [joystick], which in turn cannot dig holes
 ]]></notes>
 		<info name="alt_title" value="チャンピオンシップロードランナー"/>
 
@@ -442,7 +438,9 @@ Untested [floppy] saving
 		<year>1984</year>
 		<publisher>ブレーンメディア (Brain Media)</publisher>
 		<notes><![CDATA[
-Black screen
+[FDC] Black screen, uses [MC6845] DE readback for something
+Unresponsive [keyboard] on main menu
+Unverified [floppy] saving
 ]]></notes>
 		<info name="alt_title" value="ファイアドラゴン"/>
 
@@ -455,7 +453,7 @@ Black screen
 
 	<software name="houryuji" supported="no">
 		<description>Houryuuji no Nazo</description>
-		<year>198?</year>
+		<year>1985</year>
 		<publisher>ソニー (Sony)</publisher>
 		<notes><![CDATA[
 Disk 1: [FDC] Error(161): Bad disk sector"
@@ -572,6 +570,7 @@ All games: claims to hit [keyboard] space for instructions but doesn't work (gam
 		<notes><![CDATA[
 [FDC] hang on title screen
 Untested [floppy] saving
+[keyboard] movements are too slow compared to [joystick], which in turn cannot dig holes
 ]]></notes>
 		<info name="alt_title" value="ロードランナー"/>
 		<info name="serial" value="SMW-G712D"/>
@@ -587,7 +586,7 @@ Untested [floppy] saving
 
 	<software name="makoask" supported="no">
 		<description>Maboroshi no Kodai Ouchou (Asuka-hen)</description>
-		<year>198?</year>
+		<year>1984</year>
 		<publisher>ソニー (Sony)</publisher>
 		<notes><![CDATA[
 Not extensively tested (language barrier)
@@ -608,7 +607,7 @@ Not extensively tested (language barrier)
 	</software>
 
 	<software name="makokyo" supported="no">
-		<description>Maboroshi no Kodai Ouchou (Kyoto-hen)</description>
+		<description>Maboroshi no Kodai Ouchou (Kyoto-hen, v1.0)</description>
 		<year>1983</year>
 		<publisher>ソニー (Sony)</publisher>
 		<notes><![CDATA[
@@ -616,6 +615,8 @@ Not extensively tested (language barrier)
 Not extensively tested (language barrier)
 ]]></notes>
 		<info name="alt_title" value="幻の古代王朝(京都編)"/>
+		<!-- on main menu -->
+		<info name="release" value="19830731"/>
 		<info name="serial" value="SMW-G704D"/>
 		<!-- (c) 1983 Luna Kikaku (self published or just devs?) -->
 
@@ -635,7 +636,7 @@ Not extensively tested (language barrier)
 	</software>
 
 	<software name="makokyoa" cloneof="makokyo" supported="no">
-		<description>Maboroshi no Kodai Ouchou (Kyoto-hen, alt)</description>
+		<description>Maboroshi no Kodai Ouchou (Kyoto-hen, v1.0 alt)</description>
 		<year>198?</year>
 		<publisher>ソニー (Sony)</publisher>
 		<notes><![CDATA[
@@ -643,6 +644,8 @@ Not extensively tested (language barrier)
 Not extensively tested (language barrier)
 ]]></notes>
 		<info name="alt_title" value="幻の古代王朝(京都編)"/>
+		<info name="release" value="19830731"/>
+		<info name="serial" value="SMW-G704D"/>
 
 		<part name="flop1" interface="floppy_3_5">
 			<dataarea name="flop" size="305328">
@@ -659,7 +662,7 @@ Not extensively tested (language barrier)
 
 	<software name="makoyosh" supported="no">
 		<description>Maboroshi no Kodai Ouchou (Yoshino-hen)</description>
-		<year>198?</year>
+		<year>1984</year>
 		<publisher>ソニー (Sony)</publisher>
 		<notes><![CDATA[
 [FDC] "Error(161) in 130: Bad disk sector"
@@ -715,10 +718,9 @@ Not extensively tested (language barrier)
 	</software>
 
 	<software name="mujindas" supported="no">
-		<!-- TODO: unconfirmed -->
 		<description>Mujintou Dasshutsu</description>
 		<year>198?</year>
-		<publisher>&lt;unknown&gt;</publisher>
+		<publisher>ソニー・クリエイティブプロダクツ (Sony Creative Products)</publisher>
 		<notes><![CDATA[
 [FDC] "LOAD ERROR"
 ]]></notes>
@@ -732,12 +734,12 @@ Not extensively tested (language barrier)
 	</software>
 
 	<software name="munazo" supported="no">
-		<!-- TODO: unconfirmed -->
 		<description>Muu Tairiku no Nazo</description>
-		<year>198?</year>
-		<publisher>&lt;unknown&gt;</publisher>
+		<year>1983</year>
+		<publisher>マジカルズゥ (MagicalZoo)</publisher>
 		<notes><![CDATA[
 [FDC] "LOAD ERROR"
+[keyboard] needs CAPS LOCK
 ]]></notes>
 		<info name="alt_title" value="ムー大陸の謎"/>
 
@@ -802,7 +804,8 @@ Unresponsive [keyboard]
 		<year>1983</year>
 		<publisher>光栄 (Koei)</publisher>
 		<notes><![CDATA[
-[MC6845] bad colors on graphic layer (similar to kanjicpm)
+[MC6845] uses 640x200x2bpp color mode
+Untested [FDC] saving
 ]]></notes>
 		<info name="alt_title" value="信長の野望"/>
 
@@ -828,14 +831,15 @@ Unresponsive [keyboard]
 	</software>
 
 	<software name="ougon" supported="no">
-		<!-- TODO: unconfirmed -->
+		<!-- "Mystery of Egypt" on intro, a subtitle? -->
 		<description>Ougon no Haka</description>
-		<year>198?</year>
+		<year>1983</year>
 		<publisher>マジカルズゥ (MagicalZoo)</publisher>
 		<notes><![CDATA[
 [FDC] "Error(161): Bad disk sector"
 ]]></notes>
 		<info name="alt_title" value="黄金の墓"/>
+		<info name="release" value="19821019"/>
 
 		<part name="flop1" interface="floppy_3_5">
 			<dataarea name="flop" size="305328">
@@ -850,6 +854,7 @@ Unresponsive [keyboard]
 		<publisher>ソニー・クリエイティブプロダクツ (Sony Creative Products)</publisher>
 		<notes><![CDATA[
 [FDC] "Err(BS) on A:"
+[MC6845] no input on title screen with continous border changes, scans DE a lot.
 ]]></notes>
 		<info name="alt_title" value="ペンジャミン"/>
 
@@ -878,7 +883,7 @@ Unresponsive [keyboard]
 		<year>1985</year>
 		<publisher>ソニー・クリエイティブプロダクツ (Sony Creative Products)</publisher>
 		<notes><![CDATA[
-[FDC] "Err (BS) on A:"
+[FDC] "Err (BS) on A:" after Sony logo
 ]]></notes>
 		<info name="alt_title" value="リメインズロボット"/>
 		<info name="serial" value="SMW-G723D"/>
@@ -1020,8 +1025,8 @@ Back cover shows a different palette scheme, undumped alt version?
 
 	<software name="tokugawa" supported="no">
 		<description>Tokugawa Fuunroku</description>
-		<year>198?</year>
-		<publisher>&lt;unknown&gt;</publisher>
+		<year>1984</year>
+		<publisher>キヤ海外産業 (Kiya Overseas Industry)</publisher>
 		<notes><![CDATA[
 [FDC] "Error(161): Bad disk sector"
 ]]></notes>
@@ -1040,6 +1045,9 @@ Back cover shows a different palette scheme, undumped alt version?
 		<publisher>ソニー・クリエイティブプロダクツ (Sony Creative Products)</publisher>
 		<notes><![CDATA[
 [FDC] "Err (BS) on A:"
+[MC6845] stuck cursor
+[MC6845] text layer sync badly on ranking
+[MC6845] bad screen scaling on gameplay (bottom cutoff by default)
 ]]></notes>
 		<info name="alt_title" value="トランジット"/>
 
@@ -1073,6 +1081,7 @@ Standalone version of MAHJONG.COM in compinv
 		<publisher>ソニー・クリエイティブプロダクツ (Sony Creative Products)</publisher>
 		<notes><![CDATA[
 [FDC] "Err(BS) on A:"
+Cannot start a game, [keyboard]?
 ]]></notes>
 		<info name="alt_title" value="うちのタマ知りませんか？"/>
 
@@ -1092,6 +1101,7 @@ Standalone version of MAHJONG.COM in compinv
 d88: Floppy disk has excess of heads for this drive that will be discarded (floppy heads=2, drive heads=1)
 ]]></notes>
 		<info name="alt_title" value="野球狂" />
+		<sharedfeat name="joystick2_default" value="joystick" />
 
 		<part name="flop1" interface="floppy_3_5">
 			<dataarea name="flop" size="70352">
@@ -1105,9 +1115,11 @@ d88: Floppy disk has excess of heads for this drive that will be discarded (flop
 		<year>1984</year>
 		<publisher>ハドソン (Hudson Soft)</publisher>
 		<notes><![CDATA[
-[MC6845] bad colors on graphic layer (same as nobunaga?)
+[MC6845] uses 640x200x2bpp color mode
+Player-2 inputs doesn't work
 ]]></notes>
 		<info name="alt_title" value="野球狂" />
+		<sharedfeat name="joystick2_default" value="joystick" />
 
 		<part name="flop1" interface="floppy_3_5">
 			<dataarea name="flop" size="322208">
@@ -1117,13 +1129,12 @@ d88: Floppy disk has excess of heads for this drive that will be discarded (flop
 	</software>
 
 	<software name="younazo" supported="no">
-		<!-- TODO: confirm me -->
 		<description>Youkai no Nazo</description>
-		<year>198?</year>
-		<publisher>&lt;unknown&gt;</publisher>
+		<year>1985</year>
+		<publisher>ツァイト (Zeit)</publisher>
 		<notes><![CDATA[
-Stuck [buzzer]
-Doesn't clear [MC6845] graphic layer properly ([FDC]?)
+Stuck [buzzer] (fixed)
+[FDC] Doesn't clear [MC6845] graphic layer properly
 ]]></notes>
 		<info name="alt_title" value="妖花の謎"/>
 
@@ -1188,11 +1199,13 @@ Apparently a cooking application, not extensively tested (language barrier, kata
 	</software>
 
 	<software name="nitcad" supported="no">
-		<description>Nitten CAD</description>
-		<year>198?</year>
-		<publisher>&lt;unknown&gt;</publisher>
+		<!-- Was "Nitten CAD" but title screen is explicit about it -->
+		<description>Knittin' CAD</description>
+		<year>1984</year>
+		<publisher>ソニー (Sony)</publisher>
 		<notes><![CDATA[
 [FDC] "Error(161): Bad disk sector"
+Not extensively tested
 ]]></notes>
 		<info name="alt_title" value="ニッティンキャド"/>
 
@@ -1253,12 +1266,13 @@ Not extensively tested (language barrier)
 
 	<software name="sekaihat" supported="no">
 		<description>Sekai no Hata</description>
-		<year>198?</year>
-		<publisher>&lt;unknown&gt;</publisher>
+		<year>1983</year>
+		<publisher>Toei Animation</publisher>
 		<notes><![CDATA[
 [FDC] "LOAD ERROR"
 ]]></notes>
 		<info name="alt_title" value="世界の旗"/>
+		<!-- Program by World Data -->
 
 		<part name="flop1" interface="floppy_3_5">
 			<dataarea name="flop" size="305328">
@@ -1273,6 +1287,7 @@ Not extensively tested (language barrier)
 		<publisher>&lt;unknown&gt;</publisher>
 		<notes><![CDATA[
 Disk 1: [FDC] black screen, fails to bootstrap BIOS.COM
+Requires [kanji] hookup
 ]]></notes>
 		<info name="alt_title" value="SMC日本語ワープロ"/>
 
@@ -1339,14 +1354,14 @@ Not extensively tested
 	</software>
 
 	<software name="crossjnr" supported="no">
-		<!-- TODO: confirm title -->
-		<description>Junior Crosswords</description>
-		<year>198?</year>
+		<description>Elementary Crosswords</description>
+		<year>1984</year>
 		<publisher>ソニー (Sony)</publisher>
 		<notes><![CDATA[
 [FDC] Error 161: Bad disk sector
-Verify [keyboard]
+[keyboard] needs CAPS LOCK, kinda playable by holding shift but game keeps eating inputs
 ]]></notes>
+		<!-- CATENA Corporation / Oxford University Press (Tokyo) -->
 		<info name="alt_title" value="クロスワード(初級)"/>
 
 		<part name="flop1" interface="floppy_3_5">
@@ -1520,11 +1535,13 @@ How to access months 7-12, [keyboard] bug?
 	</software>
 
 	<software name="demofd4" supported="no">
+		<!-- boots as "Sony Best Selections Vol. 2" -->
 		<description>Sony Promotional Disc 4</description>
 		<year>198?</year>
 		<publisher>ソニー (Sony)</publisher>
 		<notes><![CDATA[
 [FDC] "SK Trk Err. Bad Sector"
+Crashes after title, bad disk?
 ]]></notes>
 		<info name="alt_title" value="SONY販促用ディスク4"/>
 
@@ -1537,7 +1554,6 @@ How to access months 7-12, [keyboard] bug?
 
 <!-- !Coverdiscs -->
 <!-- Rassel is (presumed) to be the devs behind all official Sony Floppy Magazine releases -->
-<!-- TODO: one between flopmag or flopmagp may be フロッピーマガジン創刊準備号 (a.k.a. Vol. 0) -->
 
 	<!-- TODO: which issue of the magazine? Also bad? -->
 	<software name="flopmag" supported="no">
@@ -1581,12 +1597,13 @@ Doesn't have a BASIC compared to most bootable flopmag*, bad? Not really Floppy 
 		<publisher>ソニー・クリエイティブプロダクツ (Sony Creative Products)</publisher>
 		<notes><![CDATA[
 Disk A
-3. [FDC] "Error(161) in 1220: Bad disk sector"
-4. [FDC] "Error(161) in 1320: Bad disk sector"
+3. [FDC] "Error(161) in 1220: Bad disk sector" (fixed)
+3. not extensively tested
+4. [FDC] "Error(161) in 1320: Bad disk sector" (fixed)
 Disk B
 1. untested (language barrier)
 3. [keyboard] unresponsive
-5. [FDC] "Error(161) in 1400: Bad disk sector" when striking space key
+5. [FDC] "Error(161) in 1400: Bad disk sector" when striking space key (fixed)
 ]]></notes>
 		<info name="alt_title" value="フロッピーマガジン2"/>
 		<info name="developer" value="Rassel"/>
@@ -1653,7 +1670,10 @@ Disk A
 4. white screen
 5. untested
 Disk B
-[FDC] "Bad disk sector"
+[FDC] "Bad disk sector" (fixed)
+1. untested (language barrier)
+5. [keyboard] unresponsive
+6. untested (language barrier)
 ]]></notes>
 		<info name="alt_title" value="フロッピーマガジン4"/>
 		<info name="developer" value="Rassel"/>
@@ -1790,10 +1810,11 @@ Disk B
 		<publisher>ソニー・クリエイティブプロダクツ (Sony Creative Products)</publisher>
 		<notes><![CDATA[
 [FDC] LOAD ERROR
+[keyboard] needs CAPS LOCK
 ]]></notes>
 		<info name="alt_title" value="フロッピーマガジン8"/>
 		<info name="developer" value="Rassel"/>
-		<!-- <info name="release" value="19850921?"/> -->
+		<info name="release" value="19850921"/>
 
 		<part name="flop1" interface="floppy_3_5">
 			<feature name="part_id" value="Disk A"/>
@@ -1831,16 +1852,16 @@ Disk B
 	</software>
 
 	<software name="flopmagp" supported="no">
-		<!-- TODO: probably a spinoff release -->
-		<description>Floppy Magazine Prep</description>
+		<description>Floppy Magazine Vol. 0</description>
 		<year>198?</year>
 		<publisher>ソニー・クリエイティブプロダクツ (Sony Creative Products)</publisher>
 		<notes><![CDATA[
-Black screen
+[FDC] Black screen
+[MC6845] Boots with green backdrop, ref is with blue, different dump or bug?
 ]]></notes>
-		<info name="alt_title" value="フロッピーマガジン"/>
+		<info name="alt_title" value="フロッピーマガジン創刊準備号"/>
 		<info name="developer" value="Rassel"/>
-		<info name="release" value="19841125"/>
+		<info name="release" value="19851125"/>
 
 		<part name="flop1" interface="floppy_3_5">
 			<dataarea name="flop" size="305328">
@@ -2004,7 +2025,7 @@ STRIKER2: "Disk read error (Bad Sector)" (bad dump?)
 		<year>198?</year>
 		<publisher>&lt;unknown&gt;</publisher>
 		<notes><![CDATA[
-MAC: stuck [buzzer]
+MAC: [buzzer] "I'm your friend" is unintelligible (verify)
 [FDC] fails on several basic utilities
 Not extensively tested
 ]]></notes>
