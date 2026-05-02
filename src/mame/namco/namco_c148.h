@@ -39,49 +39,15 @@ public:
 
 	template <typename T> void link_c148_device(T &&tag) { m_linked_c148.set_tag(std::forward<T>(tag)); }
 
+	auto in_ext_callback() { return m_in_ext_cb.bind(); }
 	auto out_ext1_callback() { return m_out_ext1_cb.bind(); }
 	auto out_ext2_callback() { return m_out_ext2_cb.bind(); }
 
-	uint8_t vblank_irq_level_r();
-	void vblank_irq_level_w(uint8_t data);
-	uint16_t vblank_irq_ack_r();
-	void vblank_irq_ack_w(uint16_t data);
-
-	uint8_t pos_irq_level_r();
-	void pos_irq_level_w(uint8_t data);
-	uint16_t pos_irq_ack_r();
-	void pos_irq_ack_w(uint16_t data);
-
-	uint8_t cpu_irq_level_r();
-	void cpu_irq_level_w(uint8_t data);
-	uint16_t cpu_irq_ack_r();
-	void cpu_irq_ack_w(uint16_t data);
-
-	uint8_t ex_irq_level_r();
-	void ex_irq_level_w(uint8_t data);
-	uint16_t ex_irq_ack_r();
-	void ex_irq_ack_w(uint16_t data);
-
-	uint8_t sci_irq_level_r();
-	void sci_irq_level_w(uint8_t data);
-	uint16_t sci_irq_ack_r();
-	void sci_irq_ack_w(uint16_t data);
-
-	uint8_t ext_posirq_line_r();
-	void ext_posirq_line_w(uint8_t data);
-	void cpu_irq_assert_w(uint16_t data);
-
-	uint8_t bus_ctrl_r();
-	void bus_ctrl_w(uint8_t data);
-
-	uint8_t ext_r();
-	void ext1_w(uint8_t data);
-	void ext2_w(uint8_t data);
 	void vblank_irq_trigger();
 	void pos_irq_trigger();
+	void cpu_irq_trigger();
 	void ex_irq_trigger();
 	void sci_irq_trigger();
-	uint8_t get_posirq_line();
 
 protected:
 	// device-level overrides
@@ -90,6 +56,7 @@ protected:
 	virtual void device_reset() override ATTR_COLD;
 
 private:
+	devcb_read8 m_in_ext_cb;
 	devcb_write8 m_out_ext1_cb;
 	devcb_write8 m_out_ext2_cb;
 
@@ -98,18 +65,47 @@ private:
 	bool m_hostcpu_master;                              // define if host cpu is master
 
 	struct{
-		uint8_t cpu;
-		uint8_t ex;
-		uint8_t sci;
-		uint8_t pos;
-		uint8_t vblank;
+		uint8_t cpu = 0;
+		uint8_t ex = 0;
+		uint8_t sci = 0;
+		uint8_t pos = 0;
+		uint8_t vblank = 0;
 	} m_irqlevel;
 
-	uint8_t m_posirq_line;
 	uint8_t m_bus_reg;
 
-	void flush_irq_acks();
-	void cpu_irq_trigger();
+	uint8_t vblank_irq_level_r();
+	void vblank_irq_level_w(uint8_t data);
+	uint16_t vblank_irq_ack_r();
+	void vblank_irq_ack_w(uint16_t data = 0);
+
+	uint8_t pos_irq_level_r();
+	void pos_irq_level_w(uint8_t data);
+	uint16_t pos_irq_ack_r();
+	void pos_irq_ack_w(uint16_t data = 0);
+
+	uint8_t cpu_irq_level_r();
+	void cpu_irq_level_w(uint8_t data);
+	uint16_t cpu_irq_ack_r();
+	void cpu_irq_ack_w(uint16_t data = 0);
+
+	uint8_t ex_irq_level_r();
+	void ex_irq_level_w(uint8_t data);
+	uint16_t ex_irq_ack_r();
+	void ex_irq_ack_w(uint16_t data = 0);
+
+	uint8_t sci_irq_level_r();
+	void sci_irq_level_w(uint8_t data);
+	uint16_t sci_irq_ack_r();
+	void sci_irq_ack_w(uint16_t data = 0);
+
+	uint8_t bus_ctrl_r();
+	void bus_ctrl_w(uint8_t data);
+
+	uint8_t ext_r();
+	void ext1_w(uint8_t data);
+	void ext2_w(uint8_t data);
+	void cpu_irq_assert_w(uint16_t data);
 };
 
 

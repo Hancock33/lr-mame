@@ -17844,6 +17844,7 @@ quizchqk
 rongrong
 rongrongg
 rongrongj
+rselect
 seljan2
 seljan2a
 sryudens
@@ -22697,6 +22698,7 @@ bloodstm
 bloodstm104
 bloodstm110
 bloodstm210
+bloodstm216
 bloodstm220
 bloodstm221
 drivedge
@@ -22710,6 +22712,7 @@ gt3dl191
 gt3dl192
 gt3ds192
 gt3dt211
+gt3dt230
 gt3dt231
 gt3dv14
 gt3dv15
@@ -22816,20 +22819,13 @@ unkzilec
 bnstars1
 
 @source:jaleco/cischeat.cpp
-armchmp2
-armchmp2o
-armchmp2o2
 bigrun
 bigrunu
-captflag
 cischeat
 f1gpstar
 f1gpstar3
 f1gpstar2
 f1gpstr2
-scudhamm
-scudhamma
-vscaptfl
 wildplt
 
 @source:jaleco/citycon.cpp
@@ -22960,6 +22956,15 @@ psychic5j
 
 @source:jaleco/pturn.cpp
 pturn
+
+@source:jaleco/scudhamm.cpp
+armchmp2
+armchmp2o
+armchmp2o2
+captflag
+scudhamm
+scudhamma
+vscaptfl
 
 @source:jaleco/skyfox.cpp
 exerizer
@@ -29899,6 +29904,7 @@ wwdash
 zenponta
 
 @source:misc/anes.cpp
+chardash
 sanma
 tonpuu
 
@@ -36066,6 +36072,7 @@ protpp
 sen101
 senwld
 silv35
+silvlt50
 solargm
 sporzbx
 sporzbxa
@@ -47878,6 +47885,7 @@ dreamlss
 drumsups
 epo_tetr
 fordrace
+genitvp
 gssytts
 guitarfv
 guitarss
@@ -48132,6 +48140,7 @@ megadri4a
 abl4play
 lexitvsprt
 my1stddr
+my1stddrj
 senspid
 shtscore
 teleshi
@@ -48190,6 +48199,7 @@ isinger
 jarajal
 jpopira
 ltv_tam
+multiplt
 namcons1
 namcons2
 popira
@@ -48726,6 +48736,7 @@ looping
 loopingu
 loopingua
 loopingub
+loopinguc
 skybump
 
 @source:videogames/supertnk.cpp
