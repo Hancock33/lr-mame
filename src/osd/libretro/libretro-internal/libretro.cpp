@@ -24,7 +24,9 @@
 extern void retro_finish();
 extern void retro_main_loop();
 
+int POSTNOTIFY     = 5; /* See retro_loop() */
 int RLOOP          = 1;
+int ENDEXEC        = 0;
 int retro_pause    = 0;
 int SHIFTON        = -1;
 char RPATH[512];
@@ -201,6 +203,7 @@ static unsigned int retro_led_state[2] = {0};
 #define CDD_SCSI        0x2000
 
 int CDD_status = CDD_READY;
+static int CDD_status_prev = CDD_status;
 
 static void retro_led_interface(void)
 {
@@ -224,6 +227,7 @@ static void retro_led_interface(void)
 
    if (CDD_status & CDD_SCSI)
       CDD_status &= ~(CDD_READ | CDD_DATA);
+   CDD_status_prev = CDD_status;
 }
 
 void retro_fastforwarding(bool enabled)
@@ -245,8 +249,9 @@ void retro_fastforwarding(bool enabled)
    environ_cb(RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE, &ff_override);
 }
 
-static int ff_counter_on  = 0;
-static int ff_counter_off = 0;
+static int ff_counter_on    = 0;
+static int ff_counter_off   = 0;
+static int ff_counter_stuck = 0;
 static void retro_autoloadfastforwarding(void)
 {
    if (!libretro_supports_ff_override)
@@ -260,22 +265,36 @@ static void retro_autoloadfastforwarding(void)
 
       if (!drive_led && libretro_ff_enabled)
       {
+         /* Normal stop */
          int ff_max = (CDD_status & CDD_SCSI) ? 10 : 0;
-         ff_counter_on = 0;
+         ff_counter_on = ff_counter_stuck = 0;
          ff_counter_off++;
          if (ff_counter_off > ff_max)
             ff = 0;
       }
       else if (drive_led && !libretro_ff_enabled)
       {
-         ff_counter_off = 0;
-         ff_counter_on++;
+         /* Start */
+         ff_counter_off = ff_counter_stuck = 0;
+         if (CDD_status != CDD_status_prev)
+            ff_counter_on++;
          if (ff_counter_on > 0)
             ff = 1;
       }
+      else if (drive_led && libretro_ff_enabled)
+      {
+         /* Stuck stop */
+         int ff_max = 59;
+         ff_counter_on = 0;
+         if (CDD_status == CDD_status_prev)
+            ff_counter_stuck++;
+         if (ff_counter_stuck > ff_max)
+            ff = 2;
+      }
       else
       {
-         ff_counter_off = ff_counter_on = 0;
+         /* Ignore */
+         ff_counter_off = ff_counter_stuck = ff_counter_on = 0;
          ff = -2;
       }
 
@@ -283,8 +302,8 @@ static void retro_autoloadfastforwarding(void)
          retro_fastforwarding((ff > 1) ? false : (ff) ? true : false);
 #if 0
       if (ff > -1)
-         printf("CD FF:%2d led:%d - on:%3d off:%3d\n",
-            ff, drive_led, ff_counter_on, ff_counter_off);
+         printf("CD FF:%2d led:%d - on:%3d off:%3d stuck:%3d\n",
+            ff, drive_led, ff_counter_on, ff_counter_off, ff_counter_stuck);
 #endif
    }
 }

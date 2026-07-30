@@ -32,6 +32,10 @@
 #include <pthread.h>
 #endif
 
+#if defined(__LIBRETRO__)
+extern int thread_mode;
+#endif
+
 //============================================================
 //  DEBUGGING
 //============================================================
@@ -61,10 +65,6 @@
 #define end_timing(v)           do { } while (0)
 #endif
 
-#if defined(__LIBRETRO__)
-extern int thread_mode;
-#endif
-
 template <typename AtomType, typename MainType>
 static void spin_while(const volatile AtomType *atom, MainType val, osd_ticks_t timeout, int invert = 0)
 {
@@ -92,10 +92,9 @@ static void spin_while_not(const volatile AtomType *atom, MainType val, osd_tick
 
 int osd_get_num_processors(bool heavy_mt)
 {
-
 #if defined(__LIBRETRO__)
-	if(!thread_mode)
-	return 1;
+	if (!thread_mode)
+		return 1;
 #endif 
 
 #if defined(SDLMAME_EMSCRIPTEN)
@@ -292,7 +291,7 @@ osd_work_queue *osd_work_queue_alloc(int flags)
 #endif
 
 #if defined(__LIBRETRO__)	
-	if(!thread_mode)
+	if (!thread_mode)
 		threadnum = 0;
 #endif
 
