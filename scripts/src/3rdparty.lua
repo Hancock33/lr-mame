@@ -227,6 +227,7 @@ end
 		MAME_DIR .. "3rdparty/zstd/lib/compress/zstd_ldm.c",
 		MAME_DIR .. "3rdparty/zstd/lib/compress/zstdmt_compress.c",
 		MAME_DIR .. "3rdparty/zstd/lib/compress/zstd_opt.c",
+		MAME_DIR .. "3rdparty/zstd/lib/compress/zstd_preSplit.c",
 		--MAME_DIR .. "3rdparty/zstd/lib/decompress/huf_decompress_amd64.S", only supports GCC-like assemblers and SysV calling convention
 		MAME_DIR .. "3rdparty/zstd/lib/decompress/huf_decompress.c",
 		MAME_DIR .. "3rdparty/zstd/lib/decompress/zstd_ddict.c",
@@ -833,7 +834,6 @@ project "7z"
 	configuration { "gmake or ninja" }
 		buildoptions_c {
 			"-Wno-error=undef",
-			"-Wno-error=strict-prototypes",
 		}
 if _OPTIONS["gcc"]~=nil then
 	if string.find(_OPTIONS["gcc"], "clang") then

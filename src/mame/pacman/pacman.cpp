@@ -2455,7 +2455,7 @@ static INPUT_PORTS_START( theglobp )
 	PORT_BIT( 0x02, IP_ACTIVE_LOW, IPT_JOYSTICK_LEFT ) PORT_4WAY
 	PORT_BIT( 0x04, IP_ACTIVE_LOW, IPT_JOYSTICK_RIGHT ) PORT_4WAY
 	PORT_BIT( 0x08, IP_ACTIVE_LOW, IPT_JOYSTICK_DOWN ) PORT_4WAY
-	PORT_BIT( 0x10, IP_ACTIVE_LOW, IPT_UNKNOWN )
+	PORT_SERVICE (0x10, IP_ACTIVE_LOW) // coin door test switch
 	PORT_BIT( 0x20, IP_ACTIVE_LOW, IPT_COIN1 )
 	PORT_BIT( 0x40, IP_ACTIVE_LOW, IPT_UNKNOWN )
 	PORT_BIT( 0x80, IP_ACTIVE_LOW, IPT_BUTTON2 ) PORT_COCKTAIL
@@ -3730,7 +3730,7 @@ void pacman_state::pacman(machine_config &config)
 
 	PALETTE(config, m_palette, FUNC(pacman_state::pacman_palette), 128 * 4, 32);
 
-	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
+	SCREEN(config, m_screen);
 	// H counts from 128->511, HBLANK starts at 144 and ends at 240
 	m_screen->set_raw(18.432_MHz_XTAL / 3, 384, 0, 288, 264, 0 /* +16 */, 224 /* +16 */);
 	m_screen->set_screen_update(FUNC(pacman_state::screen_update_pacman));

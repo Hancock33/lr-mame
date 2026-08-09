@@ -102,6 +102,7 @@ Component Side   A   B   Solder Side
 #include "emu.h"
 
 #include "cpu/m68000/m68000.h"
+#include "machine/nvram.h"
 #include "machine/timer.h"
 #include "sound/okim6295.h"
 #include "sound/ymopl.h"
@@ -660,6 +661,7 @@ void popobear_state::qiwang_main_map(address_map &map)
 {
 	popobear_main_map(map);
 
+	map(0x210000, 0x21ffff).ram().share("nvram");
 	map(0x620000, 0x620000).r(FUNC(popobear_state::_620000_r<0x01>)); // stuck displaying P XXXXX otherwise
 }
 
@@ -667,6 +669,7 @@ void popobear_state::magkengo_main_map(address_map &map)
 {
 	base_map(map);
 
+	map(0x210000, 0x21ffff).ram().share("nvram");
 	map(0x500001, 0x500001).rw("oki", FUNC(okim6295_device::read), FUNC(okim6295_device::write));
 	map(0x520000, 0x520001).portr("IN0");
 	map(0x530000, 0x530000).lr8(NAME([this] () -> u8 { return m_in1->read(); }));
@@ -1048,7 +1051,7 @@ void popobear_state::popobear(machine_config &config)
 	m_maincpu->set_addrmap(AS_PROGRAM, &popobear_state::popobear_main_map);
 	TIMER(config, "scantimer").configure_scanline(FUNC(popobear_state::scanline_cb), "screen", 0, 1);
 
-	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
+	SCREEN(config, m_screen);
 	m_screen->set_refresh_hz(59.64);
 	m_screen->set_vblank_time(ATTOSECONDS_IN_USEC(2500)); // not accurate
 	m_screen->set_screen_update(FUNC(popobear_state::screen_update));
@@ -1073,6 +1076,8 @@ void popobear_state::qiwang(machine_config &config)
 
 	m_maincpu->set_addrmap(AS_PROGRAM, &popobear_state::qiwang_main_map);
 
+	NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
+
 	m_alt_video = true;
 }
 
@@ -1081,6 +1086,8 @@ void popobear_state::magkengo(machine_config &config)
 	popobear(config);
 
 	m_maincpu->set_addrmap(AS_PROGRAM, &popobear_state::magkengo_main_map);
+
+	NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
 
 	m_alt_video = true;
 }
