@@ -604,7 +604,7 @@ class a4000_state : public amiga_state
 public:
 	a4000_state(const machine_config &mconfig, device_type type, const char *tag)
 		: amiga_state(mconfig, type, tag)
-		, m_fastram(*this, "ram") // tag needs to be "ram" for -ramsize
+		, m_fastram(*this, "ram")
 		, m_ata(*this, "ata")
 		, m_zorro(*this, "zorro3")
 		, m_ramsey_config(0)
@@ -1359,12 +1359,12 @@ void a3000_state::zorro_xrdy_w(int state)
 
 uint32_t a3000_state::zorro_dma_r(offs_t offset, uint32_t mem_mask)
 {
-	return m_maincpu->space(AS_PROGRAM).read_dword(offset, mem_mask);
+	return m_maincpu->space(AS_PROGRAM).read_dword_unaligned(offset, mem_mask);
 }
 
 void a3000_state::zorro_dma_w(offs_t offset, uint32_t data, uint32_t mem_mask)
 {
-	m_maincpu->space(AS_PROGRAM).write_dword(offset, data, mem_mask);
+	m_maincpu->space(AS_PROGRAM).write_dword_unaligned(offset, data, mem_mask);
 }
 
 void a500p_state::machine_reset()
@@ -1591,12 +1591,12 @@ void a4000_state::zorro_xrdy_w(int state)
 
 uint32_t a4000_state::zorro_dma_r(offs_t offset, uint32_t mem_mask)
 {
-	return m_maincpu->space(AS_PROGRAM).read_dword(offset, mem_mask);
+	return m_maincpu->space(AS_PROGRAM).read_dword_unaligned(offset, mem_mask);
 }
 
 void a4000_state::zorro_dma_w(offs_t offset, uint32_t data, uint32_t mem_mask)
 {
-	m_maincpu->space(AS_PROGRAM).write_dword(offset, data, mem_mask);
+	m_maincpu->space(AS_PROGRAM).write_dword_unaligned(offset, data, mem_mask);
 }
 
 void a4000t_state::machine_start()
@@ -1613,12 +1613,12 @@ bool a4000t_state::int2_pending()
 
 uint32_t a4000t_state::scsi_dma_r(offs_t offset, uint32_t mem_mask)
 {
-	return m_maincpu->space(AS_PROGRAM).read_dword(offset, mem_mask);
+	return m_maincpu->space(AS_PROGRAM).read_dword_unaligned(offset, mem_mask);
 }
 
 void a4000t_state::scsi_dma_w(offs_t offset, uint32_t data, uint32_t mem_mask)
 {
-	m_maincpu->space(AS_PROGRAM).write_dword(offset, data, mem_mask);
+	m_maincpu->space(AS_PROGRAM).write_dword_unaligned(offset, data, mem_mask);
 }
 
 void a4000t_state::scsi_interrupt_w(int state)

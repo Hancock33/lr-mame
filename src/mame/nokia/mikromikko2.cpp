@@ -77,21 +77,6 @@
 
 */
 
-/*
-
-    TODO:
-
-    - keyboard ROM is not dumped
-    - MPSC
-		- CRC
-		- PAR OVR CRC
-		- LINE OFF
-		- DMA is not implemented in z80sio.cpp
-    - CRTC186 video using CRT9007
-    - IOE186 card
-
-*/
-
 #include "emu.h"
 #include "bus/mm2/exp.h"
 #include "bus/rs232/rs232.h"
@@ -268,17 +253,6 @@ INPUT_PORTS_END
 void mm2_state::machine_start()
 {
 	m_mpsc->synca_w(1);
-
-	u8 *rom = memregion(I80186_TAG)->base();
-
-	// patch out ROM checksum validation
-	rom[0x051c] = 0x90;
-	rom[0x051d] = 0x90;
-
-	// patch out MPSC test which fails due to missing DMA and interrupts
-	rom[0x1cf8] = 0x90;
-	rom[0x1cf9] = 0x90;
-	rom[0x1cfa] = 0x90;
 
 	// state saving
 	save_item(NAME(m_cls0));
