@@ -3011,6 +3011,63 @@ triviaes5
 @source:bally/cashline.cpp
 cashline
 
+@source:bally/eurotec.cpp
+action4u
+actnts7
+arcon
+atlntis6
+b18plus
+b493
+bbust
+belamis3
+bheroe
+bjagas17
+boss
+bullys11
+caipis7
+daxxs4
+daxxs8
+duo
+elevens3
+endsp9
+fgames11
+figame3
+foxxs5
+glriasl4
+glriasl5
+graffity
+hardrock
+hslots5
+hxntanz
+jjacksl
+kingcs2
+kingcs3
+limbos3
+luxxpro
+m200s5
+machmehr
+neons12
+neons13
+oxigens7
+phntoms7
+pratngs4
+pratngs5
+ptimes11
+qriscs4
+rexe
+skys6
+snfairx2
+spdruns3
+spdruns4
+texmex
+tgnias11
+trpcals3
+tscool
+ttanpro
+victoria
+winplay
+xcross
+
 @source:bally/gridlee.cpp
 gridlee
 
@@ -3098,6 +3155,12 @@ omegrace3
 @source:bally/spyhuntertec.cpp
 spyhuntsp
 spyhuntpr
+
+@source:bally/technik2000.cpp
+bmonop
+glorias
+graffiti
+roxyc
 
 @source:bally/zwackery.cpp
 zwackery
@@ -17209,6 +17272,7 @@ bg_maxa
 ccorsario
 ccorsarioa
 charles
+eltesorof
 eurbingo7
 gladiador
 mltpoints
@@ -17216,6 +17280,7 @@ neptunp2
 perlacrb
 rockroll
 unk960606
+unk960606a
 unk960606b
 
 @source:citoh/cit101.cpp
@@ -17411,6 +17476,12 @@ prof80
 @source:conitec/prof180x.cpp
 prof180x
 prof181x
+
+@source:cosmo/cosmo_ls9310.cpp
+exfever
+
+@source:cosmo/pkscram.cpp
+pkscram
 
 @source:cromemco/c10.cpp
 c10
@@ -18759,6 +18830,9 @@ esp250c
 
 @source:esprit/executive10.cpp
 exe10102
+
+@source:excalibur/grandmaster.cpp
+egrandmas
 
 @source:excalibur/ivant.cpp
 igor
@@ -26854,6 +26928,13 @@ jr200u
 @source:matsushita/kn5000.cpp
 kn5000
 
+@source:matsushita/kn7000.cpp
+kn6000
+kn2400
+kn2600                          // SX-KN2600, same firmware as SX-KN2400
+kn6500
+kn7000
+
 @source:matsushita/myb3k.cpp
 myb3k
 jb3000
@@ -33023,9 +33104,6 @@ rndrndqs
 @source:misc/pipeline.cpp
 pipeline
 
-@source:misc/pkscram.cpp
-pkscram
-
 @source:misc/playcenter.cpp
 plycntrchtr
 plycntrchtrc
@@ -36452,6 +36530,10 @@ drumsta
 
 @source:oberheim/dmx.cpp
 obdmx
+
+@source:oberheim/matrix6.cpp
+matrix6
+matrix6r
 
 @source:oberheim/ob8.cpp
 ob8
@@ -40243,7 +40325,9 @@ cm300
 sc55mk2
 
 @source:roland/roland_sc88.cpp
+sc88
 sc88vl
+sc88pro
 
 @source:roland/roland_tb303.cpp
 tb303
@@ -40517,6 +40601,9 @@ ddz2
 djddz
 jzuanshi
 pljh
+
+@source:seequa/chameleon.cpp
+chameleon
 
 @source:sega/angelkds.cpp
 angelkds
@@ -42174,16 +42261,22 @@ pclub2
 pclub26w
 pclub26wa
 pclub27s
+pclub2bb
 pclub2fc
 pclub2kc
+pclub2mb
 pclub2pe
 pclub2pf
+pclub2sr
+pclub2ts
 pclub2v3
 pclub2wb
+pclubnbc
 pclubol
 pclubor
 pclubpok
 pclubsc5
+pclubsc6
 pclubyo
 pclubyo2
 pcpooh2
@@ -43639,9 +43732,6 @@ cortex
 
 @source:skeleton/cosmicos.cpp
 cosmicos
-
-@source:skeleton/cosmo68k.cpp
-exfever
 
 @source:skeleton/cp1.cpp
 cp1
@@ -47130,10 +47220,12 @@ ti95
 
 @source:ti/ti85.cpp
 ti73
+ti73v7
 ti73b
 ti81
 ti81v2
 ti82
+ti82stfr
 ti83
 ti83p
 ti83pb
@@ -47155,6 +47247,8 @@ ti84pcsev2
 ti84pce
 ti84pcev15
 ti84pcev30
+ti84pcev50
+ti84pcev61
 ti85
 ti86
 
