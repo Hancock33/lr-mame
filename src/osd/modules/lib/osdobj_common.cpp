@@ -241,6 +241,9 @@ void osd_common_t::register_options()
 #if !defined(OSD_WINDOWS) && !defined(SDLMAME_WIN32)
 	REGISTER_MODULE(m_mod_man, RENDERER_BGFX); // try BGFX after OpenGL on other operating systems for now
 #endif
+#if defined(OSD_MAC)
+	REGISTER_MODULE(m_mod_man, RENDERER_MACSOFT);
+#endif
 #ifdef SDLMAME_SDL3
 	REGISTER_MODULE(m_mod_man, RENDERER_SDL3ACCEL);
 #if !defined(SDLMAME_EMSCRIPTEN)
@@ -320,6 +323,9 @@ void osd_common_t::register_options()
 #if defined(OSD_SDL)
 	REGISTER_MODULE(m_mod_man, KEYBOARDINPUT_SDL);
 #endif
+#if defined(OSD_MAC)
+	REGISTER_MODULE(m_mod_man, KEYBOARDINPUT_MAC);
+#endif
 	REGISTER_MODULE(m_mod_man, KEYBOARDINPUT_RAWINPUT);
 	REGISTER_MODULE(m_mod_man, KEYBOARDINPUT_DINPUT);
 	REGISTER_MODULE(m_mod_man, KEYBOARDINPUT_WIN32);
@@ -332,6 +338,9 @@ void osd_common_t::register_options()
 #if defined(OSD_SDL)
 	REGISTER_MODULE(m_mod_man, MOUSEINPUT_SDL);
 #endif
+#if defined(OSD_MAC)
+	REGISTER_MODULE(m_mod_man, MOUSEINPUT_MAC);
+#endif
 	REGISTER_MODULE(m_mod_man, MOUSEINPUT_RAWINPUT);
 	REGISTER_MODULE(m_mod_man, MOUSEINPUT_DINPUT);
 	REGISTER_MODULE(m_mod_man, MOUSEINPUT_WIN32);
@@ -343,6 +352,9 @@ void osd_common_t::register_options()
 #ifndef __LIBRETRO__
 #if defined(OSD_SDL)
 	REGISTER_MODULE(m_mod_man, LIGHTGUNINPUT_SDL);
+#endif
+#if defined(OSD_MAC)
+	REGISTER_MODULE(m_mod_man, LIGHTGUNINPUT_MAC);
 #endif
 	REGISTER_MODULE(m_mod_man, LIGHTGUN_X11);
 	REGISTER_MODULE(m_mod_man, LIGHTGUNINPUT_RAWINPUT);
@@ -357,15 +369,20 @@ void osd_common_t::register_options()
 	REGISTER_MODULE(m_mod_man, JOYSTICKINPUT_SDLGAME);
 	REGISTER_MODULE(m_mod_man, JOYSTICKINPUT_SDLJOY);
 #endif
-#if !defined(OSD_SDL) && defined(USE_SDL_JOYSTICK)
-	REGISTER_MODULE(m_mod_man, JOYSTICKINPUT_SDLJOY);
+#if defined(OSD_MAC)
+	REGISTER_MODULE(m_mod_man, JOYSTICKINPUT_MACGAME);
+	REGISTER_MODULE(m_mod_man, JOYSTICKINPUT_MACJOY);
 #endif
 	REGISTER_MODULE(m_mod_man, JOYSTICKINPUT_WINHYBRID);
 	REGISTER_MODULE(m_mod_man, JOYSTICKINPUT_DINPUT);
 	REGISTER_MODULE(m_mod_man, JOYSTICKINPUT_XINPUT);
+#if !defined(OSD_SDL) && defined(USE_SDL_JOYSTICK)
+	REGISTER_MODULE(m_mod_man, JOYSTICKINPUT_SDLJOY);
+#endif
 #else
 	REGISTER_MODULE(m_mod_man, JOYSTICKINPUT_RETRO);
 #endif
+
 	REGISTER_MODULE(m_mod_man, JOYSTICK_NONE);
 
 	REGISTER_MODULE(m_mod_man, OUTPUT_NONE);
