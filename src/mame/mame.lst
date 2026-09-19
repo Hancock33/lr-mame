@@ -40120,6 +40120,7 @@ psion3mx_fr
 psion3mx_nl
 
 @source:psion/psion5mx.cpp
+conan
 mako
 mc218
 mc218_de
@@ -40132,6 +40133,7 @@ psion618c
 revo
 revo_de
 revo_fr
+revo_nl
 
 @source:psion/psion7.cpp
 netbook
