@@ -4,20 +4,24 @@
 
     MOS 6526/8521/8520 Complex Interface Adapter emulation
 
-	6526 is cycle accurate, passing the C64 Emulator Test Suite 2.15
-	and all VICE testprogs old-CIA tests.
+	Nearly cycle accurate emulation. Verified with the following:
+
+	- C64 Emulator Test Suite 2.15 (100%)
+	- VICE testprogs CIA tests (100%)
+	- vAmigaTS on a500 (100% of non-deprecated usable tests)
+	- reDIP-CIA gate-level model (62/72), differs on:
+		all models
+		- ser_receive (matches vAmigaTS ser1)
+		6526
+		- irq_timing (matches VICE)
+		6526A/8521
+		- icr_ack_underflow (matches VICE)
+		8520
+		- tod_mask (matches vAmigaTS showcia1)
+		- cra_todin (matches vAmigaTS timer3b/timer3c)
+		- tod_alarm (hypothetical)
 
 **********************************************************************/
-
-/*
-
-    TODO:
-
-    - off by one errors in vAmigaTS/showcia1 TODLO (reproducible particularly with -nothrottle)
-    - flag_w & amigafdc both auto-inverts index pulses, it also fails ICR vAmigaTS/showcia1 test
-      (expected: 0x00, actual: 0x10)
-
-*/
 
 #include "emu.h"
 #include "mos6526.h"
@@ -62,6 +66,12 @@ enum
 
 // cycles between an SDR write and the byte reaching the shift register
 #define SDR_LOAD_DELAY  2
+
+// cycles between the 8th CNT edge of a reception and the byte reaching SDR
+#define SDR_RECV_DELAY  5
+
+// cycles between an SPMODE change abandoning a reception and the SP flag
+#define SP_ABANDON_DELAY    1
 
 
 // interrupt mask register
@@ -117,6 +127,7 @@ enum
 
 DEFINE_DEVICE_TYPE(MOS6526,  mos6526_device,  "mos6526",  "MOS 6526 CIA")
 DEFINE_DEVICE_TYPE(MOS6526A, mos6526a_device, "mos6526a", "MOS 6526A CIA")
+DEFINE_DEVICE_TYPE(MOS8521,  mos8521_device,  "mos8521",  "MOS 8521 CIA")
 DEFINE_DEVICE_TYPE(MOS8520,  mos8520_device,  "mos8520",  "MOS 8520 CIA")
 
 
@@ -220,6 +231,13 @@ void mos6526_device::set_cra(uint8_t data)
 
 			m_sdr_force_finish = !settled || (toggling && !(m_bits == 8 && !m_cnt));
 		}
+		else if (m_sdr_recv_delay >= 2)
+		{
+			// an abandoned reception never reaches SDR, but still releases
+			// its SP interrupt
+			m_sdr_recv_delay = 0;
+			m_sp_delay = SP_ABANDON_DELAY;
+		}
 		else if (m_sdr_force_finish)
 		{
 			// going back to output releases it as a serial interrupt
@@ -238,7 +256,7 @@ void mos6526_device::set_cra(uint8_t data)
 		}
 	}
 
-	m_cra = data & ~CRA_LOAD;
+	m_cra = data & cra_mask();
 
 	m_feed_a0 = (data & 0x21) == CRA_START;
 	m_count_a1 = m_count_a0 = m_feed_a0;
@@ -378,8 +396,20 @@ void mos6526_device::clock_tod()
 
 void mos8520_device::clock_tod()
 {
-	m_tod++;
-	m_tod &= 0x00ffffff;
+	// the carry is a nibble ripple and the alarm comparator sees it half way,
+	// so a tick from $xxxFFF passes through $xxx000 and an alarm set to that
+	// fires on a value the counter never settles on
+	if ((m_tod & 0x000fff) == 0x000fff)
+	{
+		m_tod &= 0xfff000;
+		update_alarm();
+
+		m_tod = (m_tod + 0x001000) & 0xffffff;
+	}
+	else
+	{
+		m_tod++;
+	}
 }
 
 
@@ -406,14 +436,20 @@ uint8_t mos6526_device::read_tod(int offset)
 //  write_tod - time-of-day write
 //-------------------------------------------------
 
-void mos6526_device::write_tod(int offset, uint8_t data)
+uint8_t mos6526_device::tod_mask(int offset) const
 {
 	static const uint8_t mask[4] = { 0x0f, 0x7f, 0x7f, 0x9f };
 
+	return mask[offset];
+}
+
+
+void mos6526_device::write_tod(int offset, uint8_t data)
+{
 	int shift = 8 * offset;
 
 	// the unused high bits of each register don't exist on the chip
-	data &= mask[offset];
+	data &= tod_mask(offset);
 
 	if (CRB_ALARM)
 	{
@@ -436,14 +472,38 @@ void mos6526_device::update_alarm()
 {
 	bool match = (m_tod == m_alarm);
 
-	// the comparator is live and edge triggered: a write that lines the two
-	// up sets the flag without waiting for a tick
+	// the comparator is edge triggered, so a write that lines the two up
+	// raises the flag without waiting for a tick
 	if (match && !m_alarm_match)
 	{
-		m_icr |= ICR_ALARM;
+		m_alarm_pending = 1;
 	}
 
 	m_alarm_match = match;
+}
+
+
+//-------------------------------------------------
+//  clock_tod_divider - phi2/4 time-of-day clock
+//-------------------------------------------------
+
+void mos6526_device::clock_tod_divider()
+{
+	// the TOD pad and the alarm comparator run off phi2 divided by four
+	m_tod_div = (m_tod_div + 1) & 0x03;
+
+	if (m_tod_div)
+		return;
+
+	if (m_tod_pending)
+	{
+		m_tod_pending = 0;
+
+		if (!m_tod_stopped)
+			clock_tod();
+	}
+
+	update_alarm();
 }
 
 
@@ -460,10 +520,12 @@ void mos6526_device::serial_input()
 
 	if (m_bits == 8)
 	{
-		m_sdr = m_shift;
 		m_bits = 0;
 
-		m_icr |= ICR_SP;
+		// the byte is still in flight for a few cycles, and an SPMODE change
+		// inside that window abandons it rather than releasing it
+		m_sdr_recv = m_shift;
+		m_sdr_recv_delay = SDR_RECV_DELAY;
 	}
 }
 
@@ -518,6 +580,16 @@ void mos6526_device::serial_load()
 	m_sdr_empty = true;
 	m_shift_loaded = true;
 	m_bits = 0;
+}
+
+
+void mos6526_device::serial_receive()
+{
+	if (m_sdr_recv_delay && !--m_sdr_recv_delay)
+	{
+		m_sdr = m_sdr_recv;
+		m_icr |= ICR_SP;
+	}
 }
 
 
@@ -623,27 +695,51 @@ void mos6526_device::clock_tb()
 
 void mos6526_device::update_interrupt()
 {
+	uint8_t icr = 0;
+
+	// the input pads go through a synchronizer, so an edge only reaches the
+	// interrupt sources on the next cycle boundary
+	if (m_flag_pending)
+	{
+		icr |= ICR_FLAG;
+		m_flag_pending = 0;
+	}
+
+	if (m_alarm_pending)
+	{
+		icr |= ICR_ALARM;
+		m_alarm_pending = 0;
+	}
+
 	if (m_sp_delay && !--m_sp_delay)
 	{
-		m_icr |= ICR_SP;
+		icr |= ICR_SP;
 	}
 
 	if (m_ta_out)
 	{
-		m_icr |= ICR_TA;
+		icr |= ICR_TA;
 	}
 
 	if (m_tb_out)
 	{
-		// the flag is swallowed but IR still latches, so the interrupt is
-		// taken and the handler reads back $80
-		if (m_icr_read && icr_read_loses_tb())
-			m_icr_tb_lost = true;
-		else
-			m_icr |= ICR_TB;
+		icr |= ICR_TB;
 	}
 
-	m_icr_read = false;
+	if (irq_sources_delayed())
+	{
+		std::swap(icr, m_icr_delay);
+	}
+
+	// set priority: a source forming inside the clear window an ICR read opens
+	// still sets its flag, and is only swallowed the next cycle
+	uint8_t clear = m_icr_read ? 0x1f : 0x00;
+
+	if (icr_read_loses_tb() && m_icr_read_prev)
+		clear |= ICR_TB;
+
+	m_icr &= ~clear;
+	m_icr |= icr;
 }
 
 
@@ -677,28 +773,66 @@ void mos6526_device::clock_pipeline()
 
 	m_oneshot_b0 = CRB_RUNMODE;
 
-	// interrupt pipeline: m_ir0 is the masked source term, m_ir1 the IR latch
-	// it feeds (held until an ICR read, mask changes notwithstanding). The 6526
-	// latches the term a cycle after it forms, the later chips as it forms -
-	// that is the one-cycle IRQ delay difference.
-	int const ir0 = ((m_icr | (m_icr_tb_lost ? ICR_TB : 0)) & m_imr) ? 1 : 0;
+	// the IR flag (ICR bit 7) and the /IRQ pad are one SR latch, not a shift
+	// chain, so an ICR read cannot leave a stale stage to re-assert behind it
+	int const ir_set = (m_icr & m_imr) ? 1 : 0;
+	int const ir_set_model = irq_one_cycle_early() ? ir_set : m_ir_set_prev;
+	int const ir_clr_model = (m_icr_read || (icr_read_loses_tb() && m_icr_read_prev)) ? 1 : 0;
 
-	if (irq_one_cycle_early() ? ir0 : m_ir0) m_ir1 = 1;
+	// the pad's set term is sampled a cycle later than the IR flag's, except on
+	// the 8520, which has already spent that cycle delaying its sources. It sits
+	// on the latch's set input, so the reset term still reaches the pad at once.
+	int const pad_set = irq_sources_delayed() ? ir_set_model :
+			irq_one_cycle_early() ? m_ir_set_prev : m_ir_set_prev2;
 
-	m_ir0 = ir0;
-	m_icr_tb_lost = false;
+	// the 6526 sees the term a cycle after it formed, by which point it has
+	// committed and the read cannot take the flag back
+	int const ir_clr_wins = ir_clr_model && (irq_one_cycle_early() || !ir_set_model);
 
-	if (m_irq_pending && !m_irq)
+	if (ir_clr_wins)
+		m_icr7 = 0;
+	else if (ir_set_model)
+		m_icr7 = 1;
+
+	// the pad's reset is registered where the flag's is not, so an ack landing in
+	// the cycle the pad was about to assert in cannot retract it - /IRQ still
+	// pulses for that cycle. Clearing it here instead would swallow an interrupt
+	// the same read has already reported as bit 7 set. Only chips whose pad set
+	// term lags the flag's can reach that state.
+	if (irq_one_cycle_early() && !irq_sources_delayed() && pad_set && !m_ir_latch)
+	{
+		m_ir_latch = 1;
+		m_ir_clr_pending = ir_clr_model;
+	}
+	else if (ir_clr_wins || m_ir_clr_pending)
+	{
+		m_ir_latch = 0;
+		m_ir_clr_pending = false;
+	}
+	else if (pad_set)
+	{
+		m_ir_latch = 1;
+	}
+
+	m_ir_set_prev2 = m_ir_set_prev;
+	m_ir_set_prev = ir_set;
+
+	m_icr_read_prev = m_icr_read;
+	m_icr_read = false;
+
+	m_icr_sticky = m_icr_sticky_next;
+	m_icr_sticky_next = 0;
+
+	if (m_ir_latch && !m_irq)
 	{
 		m_write_irq(ASSERT_LINE);
 		m_irq = true;
 	}
-	else if (!m_irq_pending && m_irq && !m_icr)
+	else if (!m_ir_latch && m_irq)
 	{
 		m_write_irq(CLEAR_LINE);
 		m_irq = false;
 	}
-	m_irq_pending = m_ir1;
 }
 
 
@@ -708,14 +842,25 @@ void mos6526_device::clock_pipeline()
 
 void mos6526_device::synchronize()
 {
-	if (!m_pc)
+	// /PC comes off a shift register rather than the access itself: it goes low
+	// for the whole cycle after a port B access, consecutive accesses stretch
+	// that to two cycles, and two accesses one cycle apart still pulse only once
+	m_prb_rw = ((m_prb_rw << 1) | m_prb_access) & 0x07;
+	m_prb_access = 0;
+
+	int const pc = (BIT(m_prb_rw, 0) && !BIT(m_prb_rw, 2)) ? 0 : 1;
+
+	if (m_pc != pc)
 	{
-		m_pc = 1;
+		m_pc = pc;
 		m_write_pc(m_pc);
 	}
 
+	clock_tod_divider();
+
 	clock_ta();
 
+	serial_receive();
 	serial_output();
 
 	clock_tb();
@@ -760,6 +905,9 @@ mos6526_device::mos6526_device(const machine_config &mconfig, const char *tag, d
 mos6526a_device::mos6526a_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: mos6526_device(mconfig, MOS6526A, tag, owner, clock) { }
 
+mos8521_device::mos8521_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	: mos6526_device(mconfig, MOS8521, tag, owner, clock) { }
+
 mos8520_device::mos8520_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: mos6526_device(mconfig, MOS8520, tag, owner, clock) { }
 
@@ -786,15 +934,23 @@ void mos6526_device::device_start()
 
 	// state saving
 	save_item(NAME(m_irq));
-	save_item(NAME(m_ir0));
-	save_item(NAME(m_ir1));
-	save_item(NAME(m_irq_pending));
+	save_item(NAME(m_ir_set_prev));
+	save_item(NAME(m_ir_set_prev2));
+	save_item(NAME(m_icr7));
+	save_item(NAME(m_ir_latch));
 	save_item(NAME(m_icr));
 	save_item(NAME(m_icr_read));
-	save_item(NAME(m_icr_tb_lost));
+	save_item(NAME(m_icr_read_prev));
+	save_item(NAME(m_ir_clr_pending));
+	save_item(NAME(m_icr_delay));
+	save_item(NAME(m_icr_sticky));
+	save_item(NAME(m_icr_sticky_next));
 	save_item(NAME(m_imr));
 	save_item(NAME(m_pc));
+	save_item(NAME(m_prb_access));
+	save_item(NAME(m_prb_rw));
 	save_item(NAME(m_flag));
+	save_item(NAME(m_flag_pending));
 	save_item(NAME(m_pra));
 	save_item(NAME(m_prb));
 	save_item(NAME(m_ddra));
@@ -815,6 +971,8 @@ void mos6526_device::device_start()
 	save_item(NAME(m_ta_out_last));
 	save_item(NAME(m_sdr_load_delay));
 	save_item(NAME(m_sdr_force_finish));
+	save_item(NAME(m_sdr_recv));
+	save_item(NAME(m_sdr_recv_delay));
 	save_item(NAME(m_ta_out));
 	save_item(NAME(m_tb_out));
 	save_item(NAME(m_ta_pb6));
@@ -843,6 +1001,10 @@ void mos6526_device::device_start()
 	save_item(NAME(m_tb_latch));
 	save_item(NAME(m_cra));
 	save_item(NAME(m_crb));
+	save_item(NAME(m_tod_in));
+	save_item(NAME(m_tod_pending));
+	save_item(NAME(m_tod_div));
+	save_item(NAME(m_alarm_pending));
 	save_item(NAME(m_tod_count));
 	save_item(NAME(m_tod));
 	save_item(NAME(m_tod_latch));
@@ -860,16 +1022,24 @@ void mos6526_device::device_start()
 void mos6526_device::device_reset()
 {
 	m_irq = false;
-	m_ir0 = 0;
-	m_ir1 = 0;
-	m_irq_pending = 0;
+	m_ir_set_prev = 0;
+	m_ir_set_prev2 = 0;
+	m_icr7 = 0;
+	m_ir_latch = 0;
 	m_icr = 0;
 	m_imr = 0;
 	m_icr_read = false;
-	m_icr_tb_lost = false;
+	m_icr_read_prev = false;
+	m_ir_clr_pending = false;
+	m_icr_delay = 0;
+	m_icr_sticky = 0;
+	m_icr_sticky_next = 0;
 
 	m_pc = 1;
+	m_prb_access = 0;
+	m_prb_rw = 0;
 	m_flag = 1;
+	m_flag_pending = 0;
 	m_pra = 0;
 	m_prb = 0;
 	m_ddra = 0;
@@ -891,6 +1061,8 @@ void mos6526_device::device_reset()
 	m_ta_out_last = 0;
 	m_sdr_load_delay = 0;
 	m_sdr_force_finish = false;
+	m_sdr_recv = 0;
+	m_sdr_recv_delay = 0;
 
 	m_ta_out = 0;
 	m_tb_out = 0;
@@ -922,8 +1094,12 @@ void mos6526_device::device_reset()
 	m_cra = 0;
 	m_crb = 0;
 
+	m_tod_in = 0;
+	m_tod_pending = 0;
+	m_tod_div = 0;
+	m_alarm_pending = 0;
 	m_tod_count = 0;
-	m_tod = 0x01000000L;
+	m_tod = tod_reset_value();
 	m_tod_latch = 0;
 	m_alarm = 0;
 	m_tod_stopped = true;
@@ -1007,8 +1183,7 @@ uint8_t mos6526_device::read(offs_t offset)
 			data |= pb7 << 7;
 		}
 
-		m_pc = 0;
-		m_write_pc(m_pc);
+		m_prb_access = 1;
 		break;
 
 	case DDRA:
@@ -1076,26 +1251,21 @@ uint8_t mos6526_device::read(offs_t offset)
 		break;
 
 	case ICR:
-		data = (m_ir1 << 7) | m_icr;
+		// the read is a signal, not an action: it only raises the clear window,
+		// and everything resolves in the same end-of-cycle update the interrupt
+		// sources do
+		data = (m_icr7 << 7) | m_icr;
 
 		if (!machine().side_effects_disabled())
+		{
 			m_icr_read = true;
+			m_icr_sticky_next = data;
+		}
 
-		// only reset irqs if one was actually issued - amigaocs_flop.xml
-		// barb2paln4 polls Timer B status until it expires at PC=7821c.
-		// m_irq too: a swallowed Timer B flag leaves m_icr empty with IR
-		// asserted, and that interrupt still needs acking.
-		if (machine().side_effects_disabled() || (!m_icr && !m_irq))
-			return data;
+		// the previous cycle's read only drives its flags to zero now
+		if (icr_read_sticky())
+			data |= m_icr_sticky;
 
-		if (m_irq)
-			m_irq_pending = 0;
-
-		m_ir0 = 0;
-		m_ir1 = 0;
-		m_icr = 0;
-		m_irq = false;
-		m_write_irq(CLEAR_LINE);
 		break;
 
 	case CRA:
@@ -1157,8 +1327,7 @@ void mos6526_device::write(offs_t offset, uint8_t data)
 		m_prb = data;
 		update_pb();
 
-		m_pc = 0;
-		m_write_pc(m_pc);
+		m_prb_access = 1;
 		break;
 
 	case DDRA:
@@ -1315,7 +1484,11 @@ void mos8520_device::write(offs_t offset, uint8_t data)
 		break;
 
 	case TOD_MIN:
-		m_tod_stopped = true;
+		if (!CRB_ALARM)
+		{
+			m_tod_stopped = true;
+		}
+
 		write_tod(2, data);
 		break;
 
@@ -1332,6 +1505,9 @@ void mos8520_device::write(offs_t offset, uint8_t data)
 
 void mos6526_device::sp_w(int state)
 {
+	if (CRA_SPMODE)
+		return;
+
 	m_sp = state;
 }
 
@@ -1368,7 +1544,7 @@ void mos6526_device::flag_w(int state)
 {
 	if (m_flag && !state)
 	{
-		m_icr |= ICR_FLAG;
+		m_flag_pending = 1;
 	}
 
 	m_flag = state;
@@ -1381,10 +1557,10 @@ void mos6526_device::flag_w(int state)
 
 void mos6526_device::tod_w(int state)
 {
-	if (state && !m_tod_stopped)
+	if (state && !m_tod_in)
 	{
-		clock_tod();
-
-		update_alarm();
+		m_tod_pending = 1;
 	}
+
+	m_tod_in = state;
 }
