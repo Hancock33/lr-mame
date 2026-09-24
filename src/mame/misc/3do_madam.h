@@ -209,7 +209,7 @@ private:
 	} m_cel;
 
 	struct {
-		u16 fb_pitch[2]; // regctl0 helper
+		u16 fb_pitch[2]; // regctl0 helper (0: read pitch 1: write pitch)
 		u16 xclip, yclip; // regctl1 helper
 	} m_regis;
 
@@ -231,6 +231,7 @@ private:
 	static const get_pixel_func get_pixel_table[32 + 1];
 
 	u32 get_pixel_invalid(int x, int y, u16 woffset);
+	u32 get_pixel_0bpp_coded_lrform0(int x, int y, u16 woffset);
 	u32 get_pixel_1bpp_coded_lrform0(int x, int y, u16 woffset);
 	u32 get_pixel_2bpp_coded_lrform0(int x, int y, u16 woffset);
 	u32 get_pixel_4bpp_coded_lrform0(int x, int y, u16 woffset);
@@ -261,9 +262,13 @@ private:
 	std::tuple<u32, u32> get_coded_16bpp(u32 ptr, u8 frac);
 	std::tuple<u32, u32> get_uncoded_16bpp(u32 ptr, u8 frac);
 
+	bool check_y_clip_normal(int ypos);
+	bool check_x_clip_normal(int xpos);
+	u16 get_fb_pixel(int xpos, int ypos);
+	void set_fb_pixel(int xpos, int ypos, u16 pix_data);
+
 	std::tuple<u8, u8, u8> convert_cel_primary_source(u32 cel_data, bool p_mode);
 	std::tuple<u8, u8, u8> convert_secondary_source(u16 pix_data, bool p_mode);
-	u16 get_fb_pixel(int xpos, int ypos);
 	std::tuple<u8, u8, u8> convert_fb_primary_source(u16 fb_data, u32 cel_data, bool p_mode);
 
 	typedef std::tuple<u8, u8, u8, u8> (madam_device::*pixc_ms_func)(u32 cel_data, bool p_mode);
@@ -295,11 +300,11 @@ private:
 	u16 pixc_math_pxor(u8 av_mode, bool avg, u8 r1s, u8 g1s, u8 b1s, u8 r2s, u8 g2s, u8 b2s);
 //	u16 pixc_math_useav_pxor(u8 av_mode, u8 r1s, u8 g1s, u8 b1s, u8 r2s, u8 g2s, u8 b2s);
 
-	typedef u16 (madam_device::*vh_interpolate_func)(int xpos, int ypos, u16 pix_data);
+	typedef u16 (madam_device::*vh_interpolate_func)(int xpos, int ypos, u16 cel_data, u16 pix_data);
 	static const vh_interpolate_func vh_interpolate_table[2];
 
-	u16 vh_interpolate_subposition(int xpos, int ypos, u16 pix_data);
-	u16 vh_interpolate_plut(int xpos, int ypos, u16 pix_data);
+	u16 vh_interpolate_subposition(int xpos, int ypos, u16 cel_data, u16 pix_data);
+	u16 vh_interpolate_plut(int xpos, int ypos, u16 cel_data, u16 pix_data);
 
 	emu_timer *m_cel_timer;
 	TIMER_CALLBACK_MEMBER(cel_tick_cb);
