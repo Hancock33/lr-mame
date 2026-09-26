@@ -26077,6 +26077,7 @@ chusenoh
 ddboy
 ddboya
 fuusenpn
+imohorip
 mariorou
 shuriboy
 slimekun
@@ -34309,6 +34310,14 @@ baraduke
 metrocrs
 metrocrsa
 
+@source:namco/bosco.cpp
+bosco
+bosco1
+bosco1o
+bosco3
+boscomd
+boscomdo
+
 @source:namco/cgang.cpp
 cgang
 
@@ -34348,12 +34357,6 @@ funcube5
 gal3
 
 @source:namco/galaga.cpp
-bosco
-bosco1
-bosco1o
-bosco3
-boscomd
-boscomdo
 galaga
 galagamf
 galagamk
@@ -40157,6 +40160,12 @@ psion3c_de
 psion3mx
 psion3mx_fr
 psion3mx_nl
+
+@source:psion/psion5.cpp
+psion5
+psion5_de
+psion5_it
+psion5_nl
 
 @source:psion/psion5mx.cpp
 conan
@@ -50092,6 +50101,7 @@ paradise
 paradisea
 paradisee
 paradlx
+paradlxa
 penky
 penkyi
 tgtbal96
