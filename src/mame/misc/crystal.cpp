@@ -27,12 +27,9 @@
     - Move flash memory implementation into machine/intelfsh.cpp
     - provide NVRAM defaults where applicable;
     - add an actual reset button (helps with inp record/playback);
-    - donghaer: needs "raster effect" for 2 players mode split screen, but no
-      interrupt is actually provided for the task so apparently not a timer
-      related effect;
-    - wulybuly: strips off main RAM to texture transfers except for text after
-      the first couple of frames;
-    - maldaiza: PIC protection.
+    - donghaer: very randomly corrupts itself during gameplay, or outright crashes;
+    - wulybuly: inputs, not extensively tested;
+    - maldaiza: PIC protection, inputs, requires superhuman mashing which looks quite off;
     - urachamu: some animation timings seems off, like bat hit animation before starting a given game.
       They were actually too fast before adding 30 Hz vblank for interlace mode, even if the game don't
       really read crtc blanking reg or use any other interrupt but the coin ones;
@@ -859,4 +856,4 @@ GAME( 2001, donghaer, crysbios, crystal,  crystal,  crystal_state, init_donghaer
 GAME( 2002, urachamu, crysbios, crystal,  urachamu, crystal_state, empty_init,    ROT0, "GamToU",              "Urachacha Mudaeri (Korea)", 0 ) // lamps, verify game timings
 GAME( 2003, topbladv, crysbios, crystal,  topbladv, crystal_state, init_topbladv, ROT0, "Sonokong / Expotato", "Top Blade V", 0 )
 GAME( 200?, wulybuly, crysbios, crystal,  wulybuly, crystal_state, empty_init,    ROT0, "<unknown>",           "Wully Bully", MACHINE_NOT_WORKING )
-GAME( 2002, maldaiza, crysbios, crystal,  crystal,  crystal_state, init_maldaiza, ROT0, "GamToU",              "Maldaliza", MACHINE_NOT_WORKING | MACHINE_UNEMULATED_PROTECTION ) // controls
+GAME( 2002, maldaiza, crysbios, crystal,  crystal,  crystal_state, init_maldaiza, ROT0, "GamToU",              "Maldaliza!", MACHINE_NOT_WORKING | MACHINE_UNEMULATED_PROTECTION ) // controls

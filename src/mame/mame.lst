@@ -438,9 +438,6 @@ victor9k
 @source:adc/super6.cpp
 super6
 
-@source:adc/superslave.cpp
-superslv
-
 @source:adds/4000_260.cpp
 4000_260
 
@@ -3052,34 +3049,54 @@ arcon
 atlntis6
 b18plus
 b493
+barons5
 bbust
+bclubs4
 belamis3
 bheroe
 bjagas17
 boss
+briscs5
+briscs6
 bullys11
 caipis7
+carats5
+coloss3
 daxxs4
 daxxs8
+diakp2
+diaks5
 duo
 elevens3
 endsp9
 fgames11
 figame3
 foxxs5
+gigas5
 glriasl4
 glriasl5
 graffity
 hardrock
+heroldp5
 hslots5
 hxntanz
+jetsets5
 jjacksl
 kingcs2
 kingcs3
+kingpp5
+kingrp1
+lanzes5
 limbos3
+lordp5
+lords2
+lords5
 luxxpro
 m200s5
 machmehr
+mnrchp1
+mnrchp5
+mnrchs6
 neons12
 neons13
 oxigens7
@@ -3089,7 +3106,14 @@ pratngs5
 ptimes11
 qriscs4
 rexe
+rexsp5
+roys4
+rrunp1
+scoots2
+sfires5
 skys6
+sjumpe6
+smacs5
 snfairx2
 spdruns3
 spdruns4
@@ -3098,7 +3122,9 @@ tgnias11
 trpcals3
 tscool
 ttanpro
+twstiis3
 victoria
+winds2
 winplay
 xcross
 
@@ -17389,13 +17415,23 @@ c65
 
 @source:commodore/c128.cpp
 c128
+c128_ch
 c128_de
+c128_fr
+c128_it
+c128_no
 c128_se
 c128cr
 c128d
 c128d81
 c128dcr
+c128dcr_ch
 c128dcr_de
+c128dcr_dk
+c128dcr_es
+c128dcr_fr
+c128dcr_it
+c128dcr_no
 c128dcr_se
 c128dcrp
 c128dp
@@ -18474,6 +18510,7 @@ mjschuka
 mjswacad
 mjswacads
 mjtenho
+mjtktrdx
 mjxysl
 mmpanic
 momotaro
@@ -18695,7 +18732,7 @@ mag_burn
 mag_coco
 mag_day
 mag_ddrg
-mag_ddrgec
+mag_ddrgdd
 mag_dodg
 mag_drac
 mag_exzi
@@ -18704,6 +18741,7 @@ mag_fsha
 mag_pdak
 mag_scon
 mag_sconcc
+mag_sconce
 mag_time
 mag_war
 mag_wara
@@ -21162,6 +21200,9 @@ mbs1
 @source:homebrew/68ksbc.cpp
 68ksbc
 
+@source:homebrew/arduboy.cpp
+arduboy
+
 @source:homebrew/chaos.cpp
 chaos
 
@@ -21994,6 +22035,7 @@ lhdmgp
 lhdmgp200c3m
 lhzb3
 lhzb3106c5m
+lhzb3p
 lhzb3sjb
 lhzb4
 lhzb4dhb
@@ -25652,6 +25694,7 @@ sbishika
 bladestl
 bladestle
 bladestll
+bladestlp
 
 @source:konami/blockhl.cpp
 blockhl
@@ -33477,6 +33520,10 @@ trvhanga
 @source:misc/spdamjes.cpp
 spdamjes
 
+@source:misc/spitfire.cpp
+spitfire
+spitfirea
+
 @source:misc/spool99.cpp
 scardy2k
 spool99
@@ -33714,7 +33761,8 @@ newxpanga
 poosho
 puzlbang
 puzlbanga
-solitaire
+solitair
+solitaira
 suplup
 toyland
 vamphalf
@@ -34761,6 +34809,7 @@ pacapp
 pacapp2
 pacappsp
 ptblank2
+questff
 soulclbr
 soulclbrab
 soulclbrac
@@ -44097,6 +44146,9 @@ hazl1420
 @source:skeleton/hkcastle.cpp
 hkcastle
 
+@source:skeleton/hkfbingo.cpp
+hkfbingo
+
 @source:skeleton/hohnadam.cpp
 hohnadam
 
@@ -46845,10 +46897,10 @@ alphatan
 hhtiger
 
 @source:tangerine/microtan.cpp
-mt65
 micron
-spinveti
+mt65
 mt6809
+spinveti
 
 @source:tangerine/oric.cpp
 oric1
@@ -46881,6 +46933,9 @@ lockonc
 
 @source:tatsumi/roundup5.cpp
 roundup5
+
+@source:tatsumi/sbking.cpp
+sbking
 
 @source:tatsumi/tx1.cpp
 buggyboy
@@ -47401,6 +47456,9 @@ spellba
 ti74
 ti74a
 ti95
+
+@source:ti/ti80.cpp
+ti80
 
 @source:ti/ti85.cpp
 ti73
