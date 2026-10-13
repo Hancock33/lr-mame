@@ -1387,6 +1387,19 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/bus/c128/vdcram.h,BUSES["C128"] = true
+---------------------------------------------------
+
+if BUSES["C128"] then
+	files {
+		MAME_DIR .. "src/devices/bus/c128/vdcram.cpp",
+		MAME_DIR .. "src/devices/bus/c128/vdcram.h",
+	}
+end
+
+
+---------------------------------------------------
+--
 --@src/devices/bus/c64/exp.h,BUSES["C64"] = true
 --@src/devices/bus/c64/user.h,BUSES["C64"] = true
 ---------------------------------------------------
@@ -3114,6 +3127,8 @@ if BUSES["ISA"] then
 		MAME_DIR .. "src/devices/bus/isa/side116.h",
 		MAME_DIR .. "src/devices/bus/isa/ssi2001.cpp",
 		MAME_DIR .. "src/devices/bus/isa/ssi2001.h",
+		MAME_DIR .. "src/devices/bus/isa/stda.cpp",
+		MAME_DIR .. "src/devices/bus/isa/stda.h",
 		MAME_DIR .. "src/devices/bus/isa/stereo_fx.cpp",
 		MAME_DIR .. "src/devices/bus/isa/stereo_fx.h",
 		MAME_DIR .. "src/devices/bus/isa/svga_cirrus.cpp",
