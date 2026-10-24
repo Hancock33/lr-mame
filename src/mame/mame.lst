@@ -44637,9 +44637,6 @@ sk101bl
 @source:skeleton/slsstars.cpp
 slsstars
 
-@source:skeleton/softbox.cpp
-softbox
-
 @source:skeleton/solbourne.cpp
 sols5e
 
@@ -45574,6 +45571,9 @@ m5p_brno
 
 @source:sord/future32.cpp
 future32a
+
+@source:sse/softbox.cpp
+softbox
 
 @source:stern/astinvad.cpp
 astinvad
